@@ -1,0 +1,36 @@
+{
+  "name": "piratebay-live-torrent",
+  "version": "0.1.0",
+  "description": "Track The Pirate Bay's Top 100 Movies, manage your seen/unseen pile, one-click torrent + watch.",
+  "main": "out/main/index.js",
+  "private": true,
+  "scripts": {
+    "dev": "ELECTRON_RUN_AS_NODE= ELECTRON_NO_ATTACH_CONSOLE= electron-vite dev",
+    "build": "electron-vite build",
+    "start": "ELECTRON_RUN_AS_NODE= ELECTRON_NO_ATTACH_CONSOLE= electron-vite preview",
+    "rebuild": "electron-rebuild -f -w better-sqlite3",
+    "postinstall": "electron-rebuild -f -w better-sqlite3 -m . || true",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "parse-torrent-title": "^3.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.7.2",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.3.1",
+    "electron-vite": "^2.3.0",
+    "typescript": "^5.7.3",
+    "vite": "^5.4.11"
+  }
+}
