@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ListMoviesArg } from '@shared/api'
 import type { Topic } from '@shared/types'
 import { Top100View } from './views/Top100'
@@ -24,6 +24,25 @@ export function App(): JSX.Element {
   const [topics, setTopics] = useState<Topic[]>([])
   const [creating, setCreating] = useState(false)
   const [topicSwitcherOpen, setTopicSwitcherOpen] = useState(false)
+  const switcherRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!topicSwitcherOpen) return
+    const onDocMouseDown = (e: MouseEvent): void => {
+      if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) {
+        setTopicSwitcherOpen(false)
+      }
+    }
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setTopicSwitcherOpen(false)
+    }
+    document.addEventListener('mousedown', onDocMouseDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocMouseDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [topicSwitcherOpen])
 
   const reloadTopics = useCallback(() => {
     window.api.listTopics().then(setTopics)
@@ -46,13 +65,10 @@ export function App(): JSX.Element {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="topic-switcher">
+        <div className="topic-switcher" ref={switcherRef}>
           <button
             className="topic-switcher-btn"
-            onClick={() => {
-              if (route.kind === 'topic') setTopicSwitcherOpen((v) => !v)
-              else goMaster()
-            }}
+            onClick={() => setTopicSwitcherOpen((v) => !v)}
           >
             <span className="topic-switcher-icon">{currentTopic?.icon ?? '🏠'}</span>
             <span className="topic-switcher-name">
@@ -61,7 +77,7 @@ export function App(): JSX.Element {
             <span className="topic-switcher-chevron">▾</span>
           </button>
           {topicSwitcherOpen && (
-            <div className="topic-menu" onMouseLeave={() => setTopicSwitcherOpen(false)}>
+            <div className="topic-menu">
               <button className="topic-menu-item" onClick={goMaster}>
                 <span>🏠</span> All topics
               </button>
