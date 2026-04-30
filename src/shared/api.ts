@@ -31,6 +31,7 @@ export interface UpdateSettingsArg {
   categories?: number[]
   downloadDir?: string
   autoMarkSeenOnDownload?: boolean
+  streamWhileDownloading?: boolean
   tmdbApiKey?: string | null
   qbitHost?: string
   qbitUsername?: string

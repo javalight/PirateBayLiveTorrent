@@ -13,6 +13,7 @@ interface PersistedShape {
   categories: number[]
   downloadDir: string
   autoMarkSeenOnDownload: boolean
+  streamWhileDownloading: boolean
   qbitHost: string
   qbitUsername: string
   secrets: PersistedSecrets
@@ -27,6 +28,7 @@ const defaults = (): PersistedShape => ({
   categories: SETTINGS_DEFAULTS.categories,
   downloadDir: join(app.getPath('videos'), 'PBL'),
   autoMarkSeenOnDownload: SETTINGS_DEFAULTS.autoMarkSeenOnDownload,
+  streamWhileDownloading: SETTINGS_DEFAULTS.streamWhileDownloading,
   qbitHost: SETTINGS_DEFAULTS.qbit.host,
   qbitUsername: SETTINGS_DEFAULTS.qbit.username,
   secrets: { tmdbApiKeyEnc: null, qbitPasswordEnc: null }
@@ -71,6 +73,7 @@ export function getSettings(): AppSettings {
     categories: s.categories,
     downloadDir: s.downloadDir,
     autoMarkSeenOnDownload: s.autoMarkSeenOnDownload,
+    streamWhileDownloading: s.streamWhileDownloading,
     tmdb: { apiKey: decrypt(s.secrets.tmdbApiKeyEnc) },
     qbit: {
       host: s.qbitHost,
@@ -85,6 +88,7 @@ export interface UpdateSettingsInput {
   categories?: number[]
   downloadDir?: string
   autoMarkSeenOnDownload?: boolean
+  streamWhileDownloading?: boolean
   tmdbApiKey?: string | null
   qbitHost?: string
   qbitUsername?: string
@@ -97,6 +101,7 @@ export function updateSettings(patch: UpdateSettingsInput): AppSettings {
   if (patch.categories) s.categories = patch.categories
   if (patch.downloadDir) s.downloadDir = patch.downloadDir
   if (patch.autoMarkSeenOnDownload != null) s.autoMarkSeenOnDownload = patch.autoMarkSeenOnDownload
+  if (patch.streamWhileDownloading != null) s.streamWhileDownloading = patch.streamWhileDownloading
   if (patch.qbitHost) s.qbitHost = patch.qbitHost
   if (patch.qbitUsername) s.qbitUsername = patch.qbitUsername
 

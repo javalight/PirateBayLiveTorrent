@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { TopMovieCard } from '@shared/api'
 import type { DownloadProgressPayload } from '@shared/ipc'
+import { STREAM_PLAY_THRESHOLD } from '@shared/settings'
 import { StatusBadge } from './StatusBadge'
 
 export function MovieCard({
@@ -32,6 +33,11 @@ export function MovieCard({
 
   const showProgress = state.status === 'downloading' && progress
   const pct = showProgress ? Math.round(progress.progress * 100) : 0
+  const canStreamNow =
+    state.status === 'downloading' &&
+    !!state.filePath &&
+    !!progress &&
+    progress.progress >= STREAM_PLAY_THRESHOLD
 
   return (
     <article className="card">
@@ -71,6 +77,16 @@ export function MovieCard({
                 onClick={() => handleAction(() => window.api.play(movie.id))}
               >
                 Play
+              </button>
+            )}
+            {canStreamNow && (
+              <button
+                className="btn-action"
+                disabled={busy}
+                title={`Stream now (${pct}% downloaded)`}
+                onClick={() => handleAction(() => window.api.play(movie.id))}
+              >
+                ▶ Stream
               </button>
             )}
             {state.status === 'unseen' && (

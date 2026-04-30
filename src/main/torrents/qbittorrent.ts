@@ -67,11 +67,17 @@ export class QbittorrentClient {
     return res
   }
 
-  async addMagnet(magnet: string, savePath: string): Promise<void> {
+  async addMagnet(
+    magnet: string,
+    savePath: string,
+    opts: { sequentialDownload?: boolean; firstLastPiecePrio?: boolean } = {}
+  ): Promise<void> {
     const form = new URLSearchParams()
     form.set('urls', magnet)
     form.set('savepath', savePath)
     form.set('paused', 'false')
+    if (opts.sequentialDownload) form.set('sequentialDownload', 'true')
+    if (opts.firstLastPiecePrio) form.set('firstLastPiecePrio', 'true')
 
     const res = await this.authedFetch('/api/v2/torrents/add', {
       method: 'POST',

@@ -247,6 +247,11 @@ export class Dal {
     this.db.prepare(`UPDATE movie_state SET ${fields.join(', ')} WHERE movie_id = ?`).run(...values)
   }
 
+  setFilePath(movieId: number, filePath: string): void {
+    this.ensureState(movieId)
+    this.db.prepare('UPDATE movie_state SET file_path = ? WHERE movie_id = ?').run(filePath, movieId)
+  }
+
   activeDownloadHashes(): string[] {
     const rows = this.db
       .prepare("SELECT qbit_hash FROM movie_state WHERE status = 'downloading' AND qbit_hash IS NOT NULL")

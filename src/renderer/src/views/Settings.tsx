@@ -11,6 +11,7 @@ export function SettingsView(): JSX.Element {
     downloadDir: string
     pollIntervalMin: number
     autoMarkSeenOnDownload: boolean
+    streamWhileDownloading: boolean
   } | null>(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -26,7 +27,8 @@ export function SettingsView(): JSX.Element {
         qbitPassword: v.qbit.password ?? '',
         downloadDir: v.downloadDir,
         pollIntervalMin: v.pollIntervalMin,
-        autoMarkSeenOnDownload: v.autoMarkSeenOnDownload
+        autoMarkSeenOnDownload: v.autoMarkSeenOnDownload,
+        streamWhileDownloading: v.streamWhileDownloading
       })
     })
   }, [])
@@ -44,7 +46,8 @@ export function SettingsView(): JSX.Element {
         qbitPassword: draft.qbitPassword || null,
         downloadDir: draft.downloadDir,
         pollIntervalMin: draft.pollIntervalMin,
-        autoMarkSeenOnDownload: draft.autoMarkSeenOnDownload
+        autoMarkSeenOnDownload: draft.autoMarkSeenOnDownload,
+        streamWhileDownloading: draft.streamWhileDownloading
       })
       setS(next)
       setMsg('Saved.')
@@ -148,6 +151,14 @@ export function SettingsView(): JSX.Element {
               onChange={(e) => setDraft({ ...draft, autoMarkSeenOnDownload: e.target.checked })}
             />
             <span>Mark as seen automatically when download completes</span>
+          </label>
+          <label className="row">
+            <input
+              type="checkbox"
+              checked={draft.streamWhileDownloading}
+              onChange={(e) => setDraft({ ...draft, streamWhileDownloading: e.target.checked })}
+            />
+            <span>Stream while downloading (sequential mode — Play button appears at 5%)</span>
           </label>
         </fieldset>
 

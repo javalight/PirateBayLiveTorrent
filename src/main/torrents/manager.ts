@@ -47,7 +47,10 @@ export class DownloadManager {
     mkdirSync(settings.downloadDir, { recursive: true })
 
     const qbit = new QbittorrentClient(settings.qbit.host, settings.qbit.username, settings.qbit.password)
-    await qbit.addMagnet(best.magnet, settings.downloadDir)
+    await qbit.addMagnet(best.magnet, settings.downloadDir, {
+      sequentialDownload: settings.streamWhileDownloading,
+      firstLastPiecePrio: settings.streamWhileDownloading
+    })
 
     const lowerHash = best.infoHash.toLowerCase()
     this.dal.setStatus(movieId, 'downloading', { qbitHash: lowerHash })
@@ -95,6 +98,9 @@ export class DownloadManager {
       if (movieId == null) continue
 
       const done = isComplete(info)
+      const livePath = info.content_path || info.save_path
+      if (livePath) this.dal.setFilePath(movieId, livePath)
+
       this.broadcast({
         movieId,
         qbitHash: hash,
