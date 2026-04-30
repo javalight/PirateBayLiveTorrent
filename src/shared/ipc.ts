@@ -13,6 +13,7 @@ export const IpcChannels = {
   setStatus: 'movie:set-status',
   listMovies: 'movies:list',
   testQbit: 'qbit:test',
+  openPath: 'shell:open-path',
   topUpdated: 'top:updated',
   downloadProgress: 'download:progress'
 } as const

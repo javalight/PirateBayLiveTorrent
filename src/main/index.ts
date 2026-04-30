@@ -1,4 +1,6 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { mkdirSync } from 'node:fs'
+import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { IpcChannels } from '../shared/ipc.js'
@@ -93,6 +95,27 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
     d.setStatus(movieId, status, status === 'seen' ? { seenAt: Date.now() } : {})
   })
   ipcMain.handle(IpcChannels.testQbit, () => dl.testConnection())
+  ipcMain.handle(IpcChannels.openPath, async (_e, path: string) => {
+    if (!path || typeof path !== 'string') throw new Error('Empty path')
+    const expanded = path.startsWith('~/') ? path.replace(/^~/, app.getPath('home')) : path
+    mkdirSync(expanded, { recursive: true })
+    console.log('[openPath] opening:', expanded)
+    const err = await shell.openPath(expanded)
+    if (!err) return
+    console.warn('[openPath] shell.openPath failed:', err, '— falling back to /usr/bin/open')
+    if (process.platform === 'darwin') {
+      await new Promise<void>((resolve, reject) => {
+        const p = spawn('/usr/bin/open', [expanded], { detached: true, stdio: 'ignore' })
+        p.on('error', reject)
+        p.on('spawn', () => {
+          p.unref()
+          resolve()
+        })
+      })
+      return
+    }
+    throw new Error(err)
+  })
 }
 
 app.whenReady().then(() => {

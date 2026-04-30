@@ -15,6 +15,7 @@ const api: AppApi = {
   play: (movieId) => ipcRenderer.invoke(IpcChannels.play, movieId),
   setStatus: (movieId, status) => ipcRenderer.invoke(IpcChannels.setStatus, movieId, status),
   testQbit: () => ipcRenderer.invoke(IpcChannels.testQbit),
+  openPath: (path) => ipcRenderer.invoke(IpcChannels.openPath, path),
   onTopUpdated: (cb) => {
     const handler = (_e: Electron.IpcRendererEvent, payload: TopUpdatedPayload): void => cb(payload)
     ipcRenderer.on(IpcChannels.topUpdated, handler)

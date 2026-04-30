@@ -14,6 +14,7 @@ export function SettingsView(): JSX.Element {
   } | null>(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
+  const [openStatus, setOpenStatus] = useState<string | null>(null)
 
   useEffect(() => {
     window.api.getSettings().then((v) => {
@@ -105,10 +106,30 @@ export function SettingsView(): JSX.Element {
           <legend>Library</legend>
           <label>
             <span>Download folder</span>
-            <input
-              value={draft.downloadDir}
-              onChange={(e) => setDraft({ ...draft, downloadDir: e.target.value })}
-            />
+            <div className="input-with-button">
+              <input
+                value={draft.downloadDir}
+                onChange={(e) => setDraft({ ...draft, downloadDir: e.target.value })}
+              />
+              <button
+                type="button"
+                className="icon-btn"
+                title="Open folder in Finder"
+                aria-label="Open folder in Finder"
+                onClick={() => {
+                  setOpenStatus('opening')
+                  window.api
+                    .openPath(draft.downloadDir)
+                    .then(() => setOpenStatus('opened'))
+                    .catch((err: unknown) => setOpenStatus(`error: ${String(err)}`))
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+                </svg>
+              </button>
+            </div>
+            {openStatus ? <span className="hint inline-hint">{openStatus}</span> : null}
           </label>
           <label>
             <span>Poll every (min)</span>
