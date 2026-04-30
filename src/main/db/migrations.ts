@@ -17,6 +17,52 @@ const migrations: Array<{ version: number; up: (db: Database.Database) => void }
       }
       db.exec('CREATE INDEX IF NOT EXISTS movie_state_favorite_idx ON movie_state (favorite)')
     }
+  },
+  {
+    // v3: introduce topics. Existing torrents become members of a default topic
+    // ("Movies — Top 100", source=top100, param=201) so nothing is lost.
+    version: 3,
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS topics (
+          id              INTEGER PRIMARY KEY AUTOINCREMENT,
+          name            TEXT NOT NULL,
+          icon            TEXT,
+          source_kind     TEXT NOT NULL CHECK (source_kind IN ('top100','search')),
+          source_param    TEXT NOT NULL,
+          source_category INTEGER,
+          created_at      INTEGER NOT NULL,
+          archived_at     INTEGER
+        );
+        CREATE TABLE IF NOT EXISTS topic_torrents (
+          topic_id       INTEGER NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+          info_hash      TEXT NOT NULL REFERENCES torrents(info_hash) ON DELETE CASCADE,
+          rank           INTEGER,
+          first_seen_at  INTEGER NOT NULL,
+          last_seen_at   INTEGER NOT NULL,
+          PRIMARY KEY (topic_id, info_hash)
+        );
+        CREATE INDEX IF NOT EXISTS topic_torrents_topic_rank_idx ON topic_torrents (topic_id, rank);
+        CREATE INDEX IF NOT EXISTS topic_torrents_hash_idx ON topic_torrents (info_hash);
+      `)
+
+      const existing = db.prepare('SELECT id FROM topics LIMIT 1').get()
+      if (!existing) {
+        const now = Date.now()
+        const info = db
+          .prepare(
+            `INSERT INTO topics (name, icon, source_kind, source_param, source_category, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)`
+          )
+          .run('Movies — Top 100', '🎬', 'top100', '201', 201, now)
+        const defaultTopicId = Number(info.lastInsertRowid)
+
+        db.prepare(
+          `INSERT OR IGNORE INTO topic_torrents (topic_id, info_hash, rank, first_seen_at, last_seen_at)
+           SELECT ?, info_hash, current_rank, first_seen_at, last_seen_at FROM torrents`
+        ).run(defaultTopicId)
+      }
+    }
   }
 ]
 

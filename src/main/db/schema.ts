@@ -56,4 +56,27 @@ CREATE TABLE IF NOT EXISTS top_snapshots (
 );
 
 CREATE INDEX IF NOT EXISTS top_snapshots_cat_time_idx ON top_snapshots (category, fetched_at);
+
+CREATE TABLE IF NOT EXISTS topics (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  name            TEXT NOT NULL,
+  icon            TEXT,
+  source_kind     TEXT NOT NULL CHECK (source_kind IN ('top100','search')),
+  source_param    TEXT NOT NULL,
+  source_category INTEGER,
+  created_at      INTEGER NOT NULL,
+  archived_at     INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS topic_torrents (
+  topic_id       INTEGER NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+  info_hash      TEXT NOT NULL REFERENCES torrents(info_hash) ON DELETE CASCADE,
+  rank           INTEGER,
+  first_seen_at  INTEGER NOT NULL,
+  last_seen_at   INTEGER NOT NULL,
+  PRIMARY KEY (topic_id, info_hash)
+);
+
+CREATE INDEX IF NOT EXISTS topic_torrents_topic_rank_idx ON topic_torrents (topic_id, rank);
+CREATE INDEX IF NOT EXISTS topic_torrents_hash_idx ON topic_torrents (info_hash);
 `

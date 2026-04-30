@@ -9,7 +9,7 @@ export interface UseMoviesResult {
   pollNow: () => Promise<void>
 }
 
-export function useTopMovies(category: number): UseMoviesResult {
+export function useTopMovies(topicId: number): UseMoviesResult {
   const [movies, setMovies] = useState<TopMovieCard[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -17,14 +17,14 @@ export function useTopMovies(category: number): UseMoviesResult {
   const refresh = useCallback(() => {
     setLoading(true)
     window.api
-      .topMovies(category)
+      .topMovies(topicId)
       .then((m) => {
         setMovies(m)
         setError(null)
       })
       .catch((err: unknown) => setError(String(err)))
       .finally(() => setLoading(false))
-  }, [category])
+  }, [topicId])
 
   useEffect(() => {
     refresh()
@@ -33,9 +33,9 @@ export function useTopMovies(category: number): UseMoviesResult {
   }, [refresh])
 
   const pollNow = useCallback(async () => {
-    await window.api.pollNow()
+    await window.api.pollOneNow(topicId)
     refresh()
-  }, [refresh])
+  }, [refresh, topicId])
 
   return { movies, loading, error, refresh, pollNow }
 }

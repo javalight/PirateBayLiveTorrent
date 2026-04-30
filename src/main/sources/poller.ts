@@ -1,14 +1,15 @@
 import { BrowserWindow } from 'electron'
 import { Dal } from '../db/dal.js'
-import { buildMagnet, fetchTop100 } from './apibay.js'
+import type { Topic } from '../../shared/types.js'
+import { buildMagnet, fetchTop100, searchTorrents } from './apibay.js'
 
 export interface PollerOptions {
-  categories: number[]
   intervalMs: number
 }
 
 export interface PollResult {
-  category: number
+  topicId: number
+  topicName: string
   fetched: number
   newTorrents: number
   unlinkedCount: number
@@ -55,13 +56,14 @@ export class Poller {
     this.running = true
     try {
       const results: PollResult[] = []
-      for (const cat of this.opts.categories) {
+      const topics = this.dal.listTopics()
+      for (const topic of topics) {
         try {
-          const r = await this.refreshCategory(cat)
+          const r = await this.refreshTopic(topic)
           results.push(r)
           this.broadcast(r)
         } catch (err) {
-          console.error(`[poller] category ${cat} failed:`, err)
+          console.error(`[poller] topic "${topic.name}" failed:`, err)
         }
       }
       return results
@@ -70,8 +72,21 @@ export class Poller {
     }
   }
 
-  private async refreshCategory(category: number): Promise<PollResult> {
-    const items = await fetchTop100(category)
+  /** Refresh a specific topic on demand (e.g. when user clicks Refresh). */
+  async refreshOne(topicId: number): Promise<PollResult | null> {
+    const topic = this.dal.topicById(topicId)
+    if (!topic || topic.archivedAt != null) return null
+    const r = await this.refreshTopic(topic)
+    this.broadcast(r)
+    return r
+  }
+
+  private async refreshTopic(topic: Topic): Promise<PollResult> {
+    const items =
+      topic.sourceKind === 'top100'
+        ? await fetchTop100(parseInt(topic.sourceParam, 10))
+        : await searchTorrents(topic.sourceParam, topic.sourceCategory)
+
     const now = Date.now()
     let newCount = 0
 
@@ -93,15 +108,25 @@ export class Poller {
       if (!exists) newCount++
     }
 
-    this.dal.setTopRanks(
-      category,
+    this.dal.setTopicTorrents(
+      topic.id,
       items.map((i) => i.info_hash)
     )
-    this.dal.recordSnapshot(category, items.map((i) => i.info_hash), now)
+    this.dal.recordSnapshot(
+      topic.sourceCategory ?? 0,
+      items.map((i) => i.info_hash),
+      now
+    )
 
     const unlinked = this.dal.unlinkedTorrents(1000).length
-
-    return { category, fetched: items.length, newTorrents: newCount, unlinkedCount: unlinked, fetchedAt: now }
+    return {
+      topicId: topic.id,
+      topicName: topic.name,
+      fetched: items.length,
+      newTorrents: newCount,
+      unlinkedCount: unlinked,
+      fetchedAt: now
+    }
   }
 
   private broadcast(r: PollResult): void {

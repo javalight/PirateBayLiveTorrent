@@ -3,7 +3,12 @@
 export const IpcChannels = {
   ping: 'app:ping',
   pollNow: 'poller:tick-now',
+  pollOneNow: 'poller:tick-one',
   pollerStatus: 'poller:status',
+  listTopics: 'topics:list',
+  createTopic: 'topics:create',
+  archiveTopic: 'topics:archive',
+  topicStats: 'topics:stats',
   topMovies: 'movies:top',
   enrichNow: 'enricher:run',
   getSettings: 'settings:get',
@@ -28,7 +33,8 @@ export interface PollerStatusPayload {
 }
 
 export interface TopUpdatedPayload {
-  category: number
+  topicId: number
+  topicName: string
   fetched: number
   newTorrents: number
   unlinkedCount: number

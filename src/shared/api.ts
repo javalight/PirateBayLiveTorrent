@@ -1,7 +1,15 @@
 // API surface exposed by preload to the renderer via contextBridge.
 // Implemented in src/preload/index.ts; consumed via window.api in the renderer.
 
-import type { Movie, MovieState, MovieStatus, Torrent } from './types.js'
+import type {
+  Movie,
+  MovieState,
+  MovieStatus,
+  Topic,
+  TopicSourceKind,
+  TopicStats,
+  Torrent
+} from './types.js'
 
 export interface MovieListItem {
   movie: Movie
@@ -11,11 +19,20 @@ export interface MovieListItem {
 }
 
 export interface ListMoviesArg {
+  topicId: number
   statuses?: MovieStatus[]
   excludeStatuses?: MovieStatus[]
   inTopOnly?: boolean
   favoritesOnly?: boolean
   sort?: 'rank' | 'seen_at' | 'downloaded_at' | 'title' | 'discovery'
+}
+
+export interface CreateTopicArg {
+  name: string
+  icon?: string | null
+  sourceKind: TopicSourceKind
+  sourceParam: string
+  sourceCategory?: number | null
 }
 import type { DownloadProgressPayload, PollerStatusPayload, TopUpdatedPayload } from './ipc.js'
 import type { AppSettings } from './settings.js'
@@ -42,8 +59,13 @@ export interface UpdateSettingsArg {
 export interface AppApi {
   ping: () => Promise<string>
   pollNow: () => Promise<TopUpdatedPayload[]>
+  pollOneNow: (topicId: number) => Promise<TopUpdatedPayload | null>
   pollerStatus: () => Promise<PollerStatusPayload>
-  topMovies: (category: number) => Promise<TopMovieCard[]>
+  listTopics: () => Promise<Topic[]>
+  createTopic: (arg: CreateTopicArg) => Promise<Topic>
+  archiveTopic: (topicId: number) => Promise<void>
+  topicStats: () => Promise<TopicStats[]>
+  topMovies: (topicId: number) => Promise<TopMovieCard[]>
   listMovies: (arg: ListMoviesArg) => Promise<MovieListItem[]>
   enrichNow: () => Promise<{ attempted: number; linkedToTmdb: number; linkedFallback: number; failed: number }>
   getSettings: () => Promise<AppSettings>

@@ -57,6 +57,7 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
   })
 
   ipcMain.handle(IpcChannels.pollNow, async () => p.tick())
+  ipcMain.handle(IpcChannels.pollOneNow, async (_e, topicId: number) => p.refreshOne(topicId))
 
   ipcMain.handle(IpcChannels.pollerStatus, () => {
     const s = getSettings()
@@ -67,7 +68,20 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
     }
   })
 
-  ipcMain.handle(IpcChannels.topMovies, (_e, category: number) => d.topMovies(category))
+  ipcMain.handle(IpcChannels.listTopics, () => d.listTopics())
+  ipcMain.handle(IpcChannels.createTopic, async (_e, arg: Parameters<Dal['createTopic']>[0]) => {
+    const t = d.createTopic(arg)
+    // Kick off an immediate fetch so the new topic populates fast.
+    void p.refreshOne(t.id)
+    return t
+  })
+  ipcMain.handle(IpcChannels.archiveTopic, (_e, topicId: number) => d.archiveTopic(topicId))
+  ipcMain.handle(IpcChannels.topicStats, () => {
+    const topics = d.listTopics()
+    return topics.map((t) => d.topicStats(t))
+  })
+
+  ipcMain.handle(IpcChannels.topMovies, (_e, topicId: number) => d.topMovies(topicId))
   ipcMain.handle(IpcChannels.listMovies, (_e, arg: Parameters<Dal['filterMovies']>[0]) => d.filterMovies(arg))
 
   ipcMain.handle(IpcChannels.enrichNow, async () => buildEnricher(d).enrichPending())
@@ -76,7 +90,6 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
   ipcMain.handle(IpcChannels.updateSettings, (_e, patch: UpdateSettingsInput) => {
     const next = updateSettings(patch)
     p.setOptions({
-      categories: next.categories,
       intervalMs: next.pollIntervalMin * 60 * 1000
     })
     return next
@@ -138,7 +151,6 @@ app.whenReady().then(() => {
   dal = new Dal(getDb())
   const settings = getSettings()
   poller = new Poller(dal, {
-    categories: settings.categories,
     intervalMs: settings.pollIntervalMin * 60 * 1000
   })
   downloads = new DownloadManager(dal)

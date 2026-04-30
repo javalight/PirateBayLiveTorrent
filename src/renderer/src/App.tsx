@@ -1,92 +1,189 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ListMoviesArg } from '@shared/api'
+import type { Topic } from '@shared/types'
 import { Top100View } from './views/Top100'
 import { SettingsView } from './views/Settings'
 import { FilteredView } from './views/Filtered'
+import { MasterView } from './views/Master'
+import { NewTopic } from './views/NewTopic'
 
-type Tab = 'top100' | 'unseen' | 'favorites' | 'seen' | 'hidden' | 'settings'
+type Tab = 'top100' | 'unseen' | 'favorites' | 'seen' | 'hidden'
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'top100', label: 'Top 100' },
   { id: 'unseen', label: 'Unseen' },
   { id: 'favorites', label: '★ Favorites' },
   { id: 'seen', label: 'Seen' },
-  { id: 'hidden', label: 'Hidden' },
-  { id: 'settings', label: 'Settings' }
+  { id: 'hidden', label: 'Hidden' }
 ]
 
-export function App(): JSX.Element {
-  const [tab, setTab] = useState<Tab>('top100')
+type Route = { kind: 'master' } | { kind: 'topic'; topicId: number; tab: Tab } | { kind: 'settings' }
 
-  const unseenQuery = useMemo<ListMoviesArg>(
-    () => ({ statuses: ['unseen'], sort: 'discovery' }),
-    []
-  )
-  const favoritesQuery = useMemo<ListMoviesArg>(
-    () => ({ favoritesOnly: true, sort: 'discovery' }),
-    []
-  )
-  const seenQuery = useMemo<ListMoviesArg>(
-    () => ({ statuses: ['seen', 'downloaded'], sort: 'seen_at' }),
-    []
-  )
-  const hiddenQuery = useMemo<ListMoviesArg>(
-    () => ({ statuses: ['hidden'], sort: 'title' }),
-    []
-  )
+export function App(): JSX.Element {
+  const [route, setRoute] = useState<Route>({ kind: 'master' })
+  const [topics, setTopics] = useState<Topic[]>([])
+  const [creating, setCreating] = useState(false)
+  const [topicSwitcherOpen, setTopicSwitcherOpen] = useState(false)
+
+  const reloadTopics = useCallback(() => {
+    window.api.listTopics().then(setTopics)
+  }, [])
+
+  useEffect(() => {
+    reloadTopics()
+  }, [reloadTopics])
+
+  const goMaster = (): void => setRoute({ kind: 'master' })
+  const goSettings = (): void => setRoute({ kind: 'settings' })
+  const goTopic = (topicId: number, tab: Tab = 'unseen'): void => {
+    setRoute({ kind: 'topic', topicId, tab })
+    setTopicSwitcherOpen(false)
+  }
+
+  const currentTopic =
+    route.kind === 'topic' ? topics.find((t) => t.id === route.topicId) ?? null : null
 
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="brand">PirateBay Live</div>
-        <nav>
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              className={`nav-item ${tab === t.id ? 'active' : ''}`}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
+        <div className="topic-switcher">
+          <button
+            className="topic-switcher-btn"
+            onClick={() => {
+              if (route.kind === 'topic') setTopicSwitcherOpen((v) => !v)
+              else goMaster()
+            }}
+          >
+            <span className="topic-switcher-icon">{currentTopic?.icon ?? '🏠'}</span>
+            <span className="topic-switcher-name">
+              {currentTopic ? currentTopic.name : 'All topics'}
+            </span>
+            <span className="topic-switcher-chevron">▾</span>
+          </button>
+          {topicSwitcherOpen && (
+            <div className="topic-menu" onMouseLeave={() => setTopicSwitcherOpen(false)}>
+              <button className="topic-menu-item" onClick={goMaster}>
+                <span>🏠</span> All topics
+              </button>
+              {topics.map((t) => (
+                <button
+                  key={t.id}
+                  className={`topic-menu-item ${currentTopic?.id === t.id ? 'active' : ''}`}
+                  onClick={() => goTopic(t.id, route.kind === 'topic' ? route.tab : 'unseen')}
+                >
+                  <span>{t.icon ?? '📁'}</span> {t.name}
+                </button>
+              ))}
+              <button className="topic-menu-item topic-menu-add" onClick={() => { setCreating(true); setTopicSwitcherOpen(false) }}>
+                + New topic
+              </button>
+            </div>
+          )}
+        </div>
+
+        {route.kind === 'topic' && (
+          <nav className="tab-nav">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                className={`nav-item ${route.tab === t.id ? 'active' : ''}`}
+                onClick={() => setRoute({ kind: 'topic', topicId: route.topicId, tab: t.id })}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        )}
+
+        <div className="sidebar-footer">
+          <button className={`nav-item ${route.kind === 'settings' ? 'active' : ''}`} onClick={goSettings}>
+            ⚙ Settings
+          </button>
+        </div>
       </aside>
+
       <main className="content">
-        {tab === 'top100' && <Top100View category={201} />}
-        {tab === 'unseen' && (
-          <FilteredView
-            title="Unseen"
-            emptyText="Nothing unseen yet. Wait for the first poll, or move things back here from Seen / Hidden."
-            query={unseenQuery}
-            searchable
-          />
+        {route.kind === 'master' && (
+          <MasterView onPick={(id) => goTopic(id)} onAddTopic={() => setCreating(true)} />
         )}
-        {tab === 'favorites' && (
-          <FilteredView
-            title="Favorites"
-            emptyText="No favorites yet. Tap the ☆ on a movie to add it here."
-            query={favoritesQuery}
-            searchable
-          />
+        {route.kind === 'settings' && <SettingsView />}
+        {route.kind === 'topic' && currentTopic && (
+          <TopicView topic={currentTopic} tab={route.tab} />
         )}
-        {tab === 'seen' && (
-          <FilteredView
-            title="Seen"
-            emptyText="No seen movies yet. Download or mark something as seen and it'll appear here."
-            query={seenQuery}
-            searchable
-          />
+        {route.kind === 'topic' && !currentTopic && (
+          <section className="view"><p className="empty">Topic not found.</p></section>
         )}
-        {tab === 'hidden' && (
-          <FilteredView
-            title="Hidden"
-            emptyText="Nothing hidden. Hit the eye icon on a card to dismiss something — it'll land here."
-            query={hiddenQuery}
-            searchable
-          />
-        )}
-        {tab === 'settings' && <SettingsView />}
       </main>
+
+      {creating && (
+        <NewTopic
+          onClose={() => setCreating(false)}
+          onCreated={(id) => {
+            setCreating(false)
+            reloadTopics()
+            goTopic(id)
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+function TopicView({ topic, tab }: { topic: Topic; tab: Tab }): JSX.Element {
+  const unseenQuery = useMemo<ListMoviesArg>(
+    () => ({ topicId: topic.id, statuses: ['unseen'], sort: 'discovery' }),
+    [topic.id]
+  )
+  const favoritesQuery = useMemo<ListMoviesArg>(
+    () => ({ topicId: topic.id, favoritesOnly: true, sort: 'discovery' }),
+    [topic.id]
+  )
+  const seenQuery = useMemo<ListMoviesArg>(
+    () => ({ topicId: topic.id, statuses: ['seen', 'downloaded'], sort: 'seen_at' }),
+    [topic.id]
+  )
+  const hiddenQuery = useMemo<ListMoviesArg>(
+    () => ({ topicId: topic.id, statuses: ['hidden'], sort: 'title' }),
+    [topic.id]
+  )
+
+  if (tab === 'top100') return <Top100View topic={topic} />
+  if (tab === 'unseen') {
+    return (
+      <FilteredView
+        title={`${topic.name} — Unseen`}
+        emptyText="Nothing unseen yet for this topic. Wait for the first poll, or add new sources."
+        query={unseenQuery}
+        searchable
+      />
+    )
+  }
+  if (tab === 'favorites') {
+    return (
+      <FilteredView
+        title={`${topic.name} — Favorites`}
+        emptyText="No favorites in this topic yet."
+        query={favoritesQuery}
+        searchable
+      />
+    )
+  }
+  if (tab === 'seen') {
+    return (
+      <FilteredView
+        title={`${topic.name} — Seen`}
+        emptyText="No seen movies in this topic yet."
+        query={seenQuery}
+        searchable
+      />
+    )
+  }
+  return (
+    <FilteredView
+      title={`${topic.name} — Hidden`}
+      emptyText="Nothing hidden in this topic."
+      query={hiddenQuery}
+      searchable
+    />
   )
 }

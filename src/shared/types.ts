@@ -49,3 +49,25 @@ export interface MovieRow {
   bestTorrent: Torrent | null
   currentRank: number | null
 }
+
+export type TopicSourceKind = 'top100' | 'search'
+
+export interface Topic {
+  id: number
+  name: string
+  icon: string | null
+  sourceKind: TopicSourceKind
+  sourceParam: string
+  sourceCategory: number | null
+  createdAt: number
+  archivedAt: number | null
+}
+
+export interface TopicStats {
+  topic: Topic
+  totalMovies: number
+  unseen: number
+  seen: number
+  favorites: number
+  inTopNow: number
+}

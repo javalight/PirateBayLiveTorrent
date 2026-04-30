@@ -2,9 +2,9 @@ import { z } from 'zod'
 import { fetchJson } from '../util/http.js'
 
 const ApibayItem = z.object({
-  id: z.number(),
+  id: z.coerce.number(),
   info_hash: z.string(),
-  category: z.number(),
+  category: z.coerce.number(),
   name: z.string(),
   status: z.string(),
   num_files: z.number(),
@@ -51,4 +51,23 @@ export async function fetchTop100(category: number, opts: FetchOptions = {}): Pr
     retries: 2
   })
   return ApibayResponse.parse(json)
+}
+
+export async function searchTorrents(
+  query: string,
+  category: number | null,
+  opts: FetchOptions = {}
+): Promise<ApibayTorrent[]> {
+  const params = new URLSearchParams({ q: query })
+  if (category != null) params.set('cat', String(category))
+  const url = `https://apibay.org/q.php?${params.toString()}`
+  const json = await fetchJson(url, {
+    signal: opts.signal,
+    timeoutMs: opts.timeoutMs ?? 20_000,
+    retries: 2
+  })
+  const arr = ApibayResponse.parse(json)
+  // apibay returns [{id:'0', name:'No results returned', ...}] when there are zero hits.
+  if (arr.length === 1 && arr[0]!.id === 0) return []
+  return arr
 }

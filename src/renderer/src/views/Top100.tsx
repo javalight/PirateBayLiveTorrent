@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import type { Topic } from '@shared/types'
 import { useTopMovies } from '../hooks/useMovies'
 import { useDownloadProgress } from '../hooks/useDownloads'
 import { MovieCard } from '../components/MovieCard'
 
-export function Top100View({ category }: { category: number }): JSX.Element {
-  const { movies, loading, error, refresh, pollNow } = useTopMovies(category)
+export function Top100View({ topic }: { topic: Topic }): JSX.Element {
+  const { movies, loading, error, refresh, pollNow } = useTopMovies(topic.id)
   const progress = useDownloadProgress(refresh)
   const [polling, setPolling] = useState(false)
 
@@ -18,11 +19,15 @@ export function Top100View({ category }: { category: number }): JSX.Element {
   }
 
   const busy = polling || loading
+  const headerLabel = topic.sourceKind === 'top100' ? 'Top 100' : 'Latest'
 
   return (
     <section className="view">
       <header className="view-header">
-        <h2>Top 100 — Movies</h2>
+        <h2>
+          {topic.icon ? <span style={{ marginRight: 8 }}>{topic.icon}</span> : null}
+          {topic.name} — {headerLabel}
+        </h2>
         <button className="btn refresh-btn" onClick={() => void handleRefresh()} disabled={busy}>
           {busy ? <span className="spinner" /> : null}
           {busy ? 'Refreshing…' : 'Refresh now'}
@@ -33,7 +38,7 @@ export function Top100View({ category }: { category: number }): JSX.Element {
 
       {!loading && movies.length === 0 ? (
         <div className="empty">
-          <p>No movies yet — the first poll may still be running.</p>
+          <p>Nothing here yet — first poll may still be running.</p>
           <p>If this persists, open Settings, add your TMDB API key, then click Refresh now.</p>
         </div>
       ) : null}

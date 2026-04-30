@@ -1,5 +1,13 @@
 import type Database from 'better-sqlite3'
-import type { Movie, MovieState, MovieStatus, Torrent } from '../../shared/types.js'
+import type {
+  Movie,
+  MovieState,
+  MovieStatus,
+  Topic,
+  TopicSourceKind,
+  TopicStats,
+  Torrent
+} from '../../shared/types.js'
 
 interface TorrentRow {
   info_hash: string
@@ -88,8 +96,131 @@ export interface UpsertTorrentInput {
   imdb: string | null
 }
 
+interface TopicRow {
+  id: number
+  name: string
+  icon: string | null
+  source_kind: TopicSourceKind
+  source_param: string
+  source_category: number | null
+  created_at: number
+  archived_at: number | null
+}
+
+const topicFromRow = (r: TopicRow): Topic => ({
+  id: r.id,
+  name: r.name,
+  icon: r.icon,
+  sourceKind: r.source_kind,
+  sourceParam: r.source_param,
+  sourceCategory: r.source_category,
+  createdAt: r.created_at,
+  archivedAt: r.archived_at
+})
+
+export interface CreateTopicInput {
+  name: string
+  icon?: string | null
+  sourceKind: TopicSourceKind
+  sourceParam: string
+  sourceCategory?: number | null
+}
+
 export class Dal {
   constructor(private readonly db: Database.Database) {}
+
+  // -- topics ----------------------------------------------------------------
+
+  listTopics(includeArchived = false): Topic[] {
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM topics ${includeArchived ? '' : 'WHERE archived_at IS NULL'} ORDER BY id ASC`
+      )
+      .all() as TopicRow[]
+    return rows.map(topicFromRow)
+  }
+
+  topicById(id: number): Topic | null {
+    const r = this.db.prepare('SELECT * FROM topics WHERE id = ?').get(id) as TopicRow | undefined
+    return r ? topicFromRow(r) : null
+  }
+
+  createTopic(input: CreateTopicInput): Topic {
+    const info = this.db
+      .prepare(
+        `INSERT INTO topics (name, icon, source_kind, source_param, source_category, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        input.name,
+        input.icon ?? null,
+        input.sourceKind,
+        input.sourceParam,
+        input.sourceCategory ?? null,
+        Date.now()
+      )
+    return this.topicById(Number(info.lastInsertRowid))!
+  }
+
+  archiveTopic(id: number): void {
+    this.db.prepare('UPDATE topics SET archived_at = ? WHERE id = ?').run(Date.now(), id)
+  }
+
+  topicStats(topic: Topic): TopicStats {
+    const total = (
+      this.db.prepare('SELECT COUNT(DISTINCT t.movie_id) AS n FROM topic_torrents tt JOIN torrents t ON t.info_hash = tt.info_hash WHERE tt.topic_id = ? AND t.movie_id IS NOT NULL').get(topic.id) as { n: number }
+    ).n
+    const inTop = (
+      this.db.prepare('SELECT COUNT(DISTINCT t.movie_id) AS n FROM topic_torrents tt JOIN torrents t ON t.info_hash = tt.info_hash WHERE tt.topic_id = ? AND tt.rank IS NOT NULL AND t.movie_id IS NOT NULL').get(topic.id) as { n: number }
+    ).n
+    const unseen = (
+      this.db.prepare(
+        `SELECT COUNT(DISTINCT t.movie_id) AS n
+         FROM topic_torrents tt
+         JOIN torrents t ON t.info_hash = tt.info_hash
+         LEFT JOIN movie_state ms ON ms.movie_id = t.movie_id
+         WHERE tt.topic_id = ? AND t.movie_id IS NOT NULL
+           AND COALESCE(ms.status, 'unseen') = 'unseen'`
+      ).get(topic.id) as { n: number }
+    ).n
+    const seen = (
+      this.db.prepare(
+        `SELECT COUNT(DISTINCT t.movie_id) AS n
+         FROM topic_torrents tt
+         JOIN torrents t ON t.info_hash = tt.info_hash
+         JOIN movie_state ms ON ms.movie_id = t.movie_id
+         WHERE tt.topic_id = ? AND ms.status IN ('seen','downloaded')`
+      ).get(topic.id) as { n: number }
+    ).n
+    const favorites = (
+      this.db.prepare(
+        `SELECT COUNT(DISTINCT t.movie_id) AS n
+         FROM topic_torrents tt
+         JOIN torrents t ON t.info_hash = tt.info_hash
+         JOIN movie_state ms ON ms.movie_id = t.movie_id
+         WHERE tt.topic_id = ? AND ms.favorite = 1`
+      ).get(topic.id) as { n: number }
+    ).n
+    return { topic, totalMovies: total, inTopNow: inTop, unseen, seen, favorites }
+  }
+
+  /** Bulk update a topic's torrent membership and ranks. Hashes not in the new
+   *  list have their rank cleared but stay in the table so we keep history. */
+  setTopicTorrents(topicId: number, hashesInOrder: string[]): void {
+    const now = Date.now()
+    const tx = this.db.transaction(() => {
+      this.db.prepare('UPDATE topic_torrents SET rank = NULL WHERE topic_id = ?').run(topicId)
+      const upsert = this.db.prepare(
+        `INSERT INTO topic_torrents (topic_id, info_hash, rank, first_seen_at, last_seen_at)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(topic_id, info_hash) DO UPDATE SET
+           rank = excluded.rank,
+           last_seen_at = excluded.last_seen_at`
+      )
+      hashesInOrder.forEach((h, i) => upsert.run(topicId, h, i + 1, now, now))
+    })
+    tx()
+  }
 
   // -- torrents --------------------------------------------------------------
 
@@ -116,17 +247,6 @@ export class Dal {
     this.db.prepare('UPDATE torrents SET enrichment_tried_at = ? WHERE info_hash = ?').run(now, infoHash)
   }
 
-  setTopRanks(category: number, hashesInOrder: string[]): void {
-    const tx = this.db.transaction(() => {
-      this.db
-        .prepare('UPDATE torrents SET current_rank = NULL WHERE category = ? AND current_rank IS NOT NULL')
-        .run(category)
-      const upd = this.db.prepare('UPDATE torrents SET current_rank = ? WHERE info_hash = ?')
-      hashesInOrder.forEach((h, i) => upd.run(i + 1, h))
-    })
-    tx()
-  }
-
   linkTorrentToMovie(infoHash: string, movieId: number): void {
     this.db.prepare('UPDATE torrents SET movie_id = ? WHERE info_hash = ?').run(movieId, infoHash)
   }
@@ -140,7 +260,7 @@ export class Dal {
 
   unlinkedTorrents(limit = 50): Torrent[] {
     const rows = this.db
-      .prepare('SELECT * FROM torrents WHERE movie_id IS NULL ORDER BY current_rank ASC NULLS LAST LIMIT ?')
+      .prepare('SELECT * FROM torrents WHERE movie_id IS NULL ORDER BY last_seen_at DESC LIMIT ?')
       .all(limit) as TorrentRow[]
     return rows.map(torrentFromRow)
   }
@@ -152,7 +272,7 @@ export class Dal {
         `SELECT * FROM torrents
          WHERE movie_id IS NULL
            AND (enrichment_tried_at IS NULL OR enrichment_tried_at < ?)
-         ORDER BY current_rank ASC NULLS LAST
+         ORDER BY last_seen_at DESC
          LIMIT ?`
       )
       .all(retryAfter, limit) as TorrentRow[]
@@ -290,17 +410,29 @@ export class Dal {
    * Used by the Unseen / Seen / Library views.
    */
   filterMovies(opts: {
+    topicId: number
     statuses?: MovieStatus[]
     inTopOnly?: boolean
     excludeStatuses?: MovieStatus[]
     favoritesOnly?: boolean
     sort?: 'rank' | 'seen_at' | 'downloaded_at' | 'title' | 'discovery'
   }): Array<{ movie: Movie; state: MovieState; bestTorrent: Torrent | null; rank: number | null }> {
-    const conds: string[] = []
-    const params: unknown[] = []
+    const conds: string[] = [
+      `EXISTS (
+         SELECT 1 FROM topic_torrents tt
+         JOIN torrents t ON t.info_hash = tt.info_hash
+         WHERE tt.topic_id = ? AND t.movie_id = m.id
+       )`
+    ]
+    const params: unknown[] = [opts.topicId]
 
     if (opts.inTopOnly) {
-      conds.push(`EXISTS (SELECT 1 FROM torrents t2 WHERE t2.movie_id = m.id AND t2.current_rank IS NOT NULL)`)
+      conds.push(`EXISTS (
+        SELECT 1 FROM topic_torrents tt2
+        JOIN torrents t2 ON t2.info_hash = tt2.info_hash
+        WHERE tt2.topic_id = ? AND t2.movie_id = m.id AND tt2.rank IS NOT NULL
+      )`)
+      params.push(opts.topicId)
     }
 
     if (opts.statuses && opts.statuses.length > 0) {
@@ -321,16 +453,23 @@ export class Dal {
 
     const where = conds.length > 0 ? `WHERE ${conds.join(' AND ')}` : ''
 
+    const rankSubquery = `(SELECT MIN(tt.rank) FROM topic_torrents tt
+      JOIN torrents t ON t.info_hash = tt.info_hash
+      WHERE tt.topic_id = ? AND t.movie_id = m.id)`
+    const recencySubquery = `(SELECT MAX(tt.last_seen_at) FROM topic_torrents tt
+      JOIN torrents t ON t.info_hash = tt.info_hash
+      WHERE tt.topic_id = ? AND t.movie_id = m.id)`
+
     let orderBy = 'm.title COLLATE NOCASE ASC'
-    if (opts.sort === 'rank') orderBy = '(SELECT MIN(current_rank) FROM torrents WHERE movie_id = m.id) ASC NULLS LAST'
-    else if (opts.sort === 'seen_at') orderBy = 'ms.seen_at DESC'
+    let orderParams: unknown[] = []
+    if (opts.sort === 'rank') {
+      orderBy = `${rankSubquery} ASC NULLS LAST`
+      orderParams = [opts.topicId]
+    } else if (opts.sort === 'seen_at') orderBy = 'ms.seen_at DESC'
     else if (opts.sort === 'downloaded_at') orderBy = 'ms.downloaded_at DESC'
     else if (opts.sort === 'discovery') {
-      // Currently-ranked first (by rank), then everything else by most-recently-encountered.
-      orderBy = `
-        (SELECT MIN(current_rank) FROM torrents WHERE movie_id = m.id) ASC NULLS LAST,
-        (SELECT MAX(first_seen_at) FROM torrents WHERE movie_id = m.id) DESC
-      `
+      orderBy = `${rankSubquery} ASC NULLS LAST, ${recencySubquery} DESC`
+      orderParams = [opts.topicId, opts.topicId]
     }
 
     const rows = this.db
@@ -342,13 +481,13 @@ export class Dal {
                 ms.downloaded_at AS s_downloaded_at,
                 ms.seen_at AS s_seen_at,
                 COALESCE(ms.favorite, 0) AS s_favorite,
-                (SELECT MIN(current_rank) FROM torrents WHERE movie_id = m.id AND current_rank IS NOT NULL) AS rank
+                ${rankSubquery} AS rank
          FROM movies m
          LEFT JOIN movie_state ms ON ms.movie_id = m.id
          ${where}
          ORDER BY ${orderBy}`
       )
-      .all(...params) as Array<MovieRow & {
+      .all(opts.topicId, ...params, ...orderParams) as Array<MovieRow & {
         s_status: MovieStatus
         s_file_path: string | null
         s_qbit_hash: string | null
@@ -376,25 +515,27 @@ export class Dal {
   }
 
   /**
-   * Movies currently in the Top 100 of the given category, with their state
-   * and the top-seeded torrent for each.
+   * Movies currently ranked in the given topic, with their state and best torrent.
    */
-  topMovies(category: number): Array<{ movie: Movie; state: MovieState; bestTorrent: Torrent; rank: number }> {
+  topMovies(topicId: number): Array<{ movie: Movie; state: MovieState; bestTorrent: Torrent; rank: number }> {
     const rows = this.db
       .prepare(
-        `SELECT t.*, m.id AS m_id, m.tmdb_id AS m_tmdb_id, m.title AS m_title, m.year AS m_year,
+        `SELECT t.*, tt.rank AS topic_rank,
+                m.id AS m_id, m.tmdb_id AS m_tmdb_id, m.title AS m_title, m.year AS m_year,
                 m.poster_url AS m_poster_url, m.plot AS m_plot, m.rating AS m_rating,
                 m.runtime_min AS m_runtime_min, m.genres_json AS m_genres_json,
                 ms.status AS s_status, ms.file_path AS s_file_path, ms.qbit_hash AS s_qbit_hash,
                 ms.downloaded_at AS s_downloaded_at, ms.seen_at AS s_seen_at,
                 COALESCE(ms.favorite, 0) AS s_favorite
-         FROM torrents t
+         FROM topic_torrents tt
+         JOIN torrents t ON t.info_hash = tt.info_hash
          LEFT JOIN movies m ON m.id = t.movie_id
          LEFT JOIN movie_state ms ON ms.movie_id = m.id
-         WHERE t.category = ? AND t.current_rank IS NOT NULL
-         ORDER BY t.current_rank ASC`
+         WHERE tt.topic_id = ? AND tt.rank IS NOT NULL
+         ORDER BY tt.rank ASC`
       )
-      .all(category) as Array<TorrentRow & {
+      .all(topicId) as Array<TorrentRow & {
+        topic_rank: number
         m_id: number | null
         m_tmdb_id: number | null
         m_title: string | null
@@ -415,7 +556,7 @@ export class Dal {
     return rows
       .filter((r) => r.m_id !== null)
       .map((r) => ({
-        rank: r.current_rank!,
+        rank: r.topic_rank,
         bestTorrent: torrentFromRow(r),
         movie: {
           id: r.m_id!,
