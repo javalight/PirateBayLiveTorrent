@@ -12,7 +12,7 @@ export function MovieGrid({
   onChanged?: () => void
 }): JSX.Element {
   return (
-    <div className="grid">
+    <div className="list">
       {items.map((it) => {
         if (!it.bestTorrent) return null
         return (

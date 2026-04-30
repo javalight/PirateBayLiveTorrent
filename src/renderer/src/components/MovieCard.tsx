@@ -45,129 +45,117 @@ export function MovieCard({
   })()
 
   return (
-    <article className="card">
-      <div className="card-rank">#{rank}</div>
-      <button
-        className={`card-fav ${state.favorite ? 'is-fav' : ''}`}
-        title={state.favorite ? 'Remove from favorites' : 'Add to favorites'}
-        aria-label="Toggle favorite"
-        disabled={busy}
-        onClick={(e) => {
-          e.stopPropagation()
-          handleAction(() => window.api.setFavorite(movie.id, !state.favorite))
-        }}
-      >
-        {state.favorite ? '★' : '☆'}
-      </button>
-      <div className="card-poster">
-        {movie.posterUrl ? (
-          <img src={movie.posterUrl} alt={movie.title} loading="lazy" />
-        ) : (
-          <div className="poster-placeholder">No poster</div>
-        )}
-      </div>
-      <div className="card-body">
-        <h3 className="card-title" title={movie.title}>
-          {movie.title}
-        </h3>
-        <div className="card-meta">
-          {movie.year ? <span>{movie.year}</span> : null}
-          {rating ? <span>★ {rating}</span> : null}
-          {bestTorrent.seeders ? <span>{bestTorrent.seeders} seed</span> : null}
+    <article className="row">
+      <div className="row-main">
+        {rank ? <div className="row-rank">#{rank}</div> : <div className="row-rank row-rank-empty">—</div>}
+
+        <div className="row-title-block">
+          <h3 className="row-title" title={movie.title}>
+            {movie.title}
+          </h3>
+          <div className="row-meta">
+            {movie.year ? <span>{movie.year}</span> : null}
+            {rating ? <span>★ {rating}</span> : null}
+            {bestTorrent.seeders ? <span>{bestTorrent.seeders} seed</span> : null}
+          </div>
         </div>
-        <div className="card-row">
-          <StatusBadge status={state.status} />
-          <div className="card-actions">
+
+        <StatusBadge status={state.status} />
+
+        <div className="row-actions">
+          <button
+            className="btn-ghost"
+            title="Watch trailer on YouTube"
+            disabled={busy}
+            onClick={() => handleAction(() => window.api.openExternal(trailerUrl))}
+          >
+            ▶ Trailer
+          </button>
+
+          {(state.status === 'unseen' || state.status === 'hidden') && (
+            <button
+              className="btn-action"
+              disabled={busy}
+              onClick={() => handleAction(() => window.api.download(movie.id))}
+            >
+              Download
+            </button>
+          )}
+
+          {(state.status === 'downloaded' || state.status === 'seen') && (
+            <button
+              className="btn-action"
+              disabled={busy || !state.filePath}
+              onClick={() => handleAction(() => window.api.play(movie.id))}
+            >
+              Play
+            </button>
+          )}
+
+          {canStreamNow && (
+            <button
+              className="btn-action"
+              disabled={busy}
+              title={`Stream now (${pct}% downloaded)`}
+              onClick={() => handleAction(() => window.api.play(movie.id))}
+            >
+              ▶ Stream
+            </button>
+          )}
+
+          {state.status === 'unseen' && (
+            <>
+              <button
+                className="btn-ghost"
+                title="Mark as seen without downloading"
+                disabled={busy}
+                onClick={() => handleAction(() => window.api.setStatus(movie.id, 'seen'))}
+              >
+                ✓
+              </button>
+              <button
+                className="btn-ghost"
+                title="Hide — won't show in Unseen anymore"
+                disabled={busy}
+                onClick={() => handleAction(() => window.api.setStatus(movie.id, 'hidden'))}
+              >
+                ⊘
+              </button>
+            </>
+          )}
+          {(state.status === 'seen' || state.status === 'hidden') && (
             <button
               className="btn-ghost"
-              title="Watch trailer on YouTube"
+              title="Move back to unseen"
               disabled={busy}
-              onClick={() => handleAction(() => window.api.openExternal(trailerUrl))}
+              onClick={() => handleAction(() => window.api.setStatus(movie.id, 'unseen'))}
             >
-              ▶ Trailer
+              ↺
             </button>
-            {(state.status === 'unseen' || state.status === 'hidden') && (
-              <button
-                className="btn-action"
-                disabled={busy}
-                onClick={() => handleAction(() => window.api.download(movie.id))}
-              >
-                Download
-              </button>
-            )}
-            {(state.status === 'downloaded' || state.status === 'seen') && (
-              <button
-                className="btn-action"
-                disabled={busy || !state.filePath}
-                onClick={() => handleAction(() => window.api.play(movie.id))}
-              >
-                Play
-              </button>
-            )}
-            {canStreamNow && (
-              <button
-                className="btn-action"
-                disabled={busy}
-                title={`Stream now (${pct}% downloaded)`}
-                onClick={() => handleAction(() => window.api.play(movie.id))}
-              >
-                ▶ Stream
-              </button>
-            )}
-            {state.status === 'unseen' && (
-              <>
-                <button
-                  className="btn-ghost"
-                  title="Mark as seen without downloading"
-                  disabled={busy}
-                  onClick={() => handleAction(() => window.api.setStatus(movie.id, 'seen'))}
-                >
-                  ✓
-                </button>
-                <button
-                  className="btn-ghost"
-                  title="Hide — won't show in Unseen anymore"
-                  disabled={busy}
-                  onClick={() => handleAction(() => window.api.setStatus(movie.id, 'hidden'))}
-                >
-                  ⊘
-                </button>
-              </>
-            )}
-            {state.status === 'seen' && (
-              <button
-                className="btn-ghost"
-                title="Move back to unseen"
-                disabled={busy}
-                onClick={() => handleAction(() => window.api.setStatus(movie.id, 'unseen'))}
-              >
-                ↺
-              </button>
-            )}
-            {state.status === 'hidden' && (
-              <button
-                className="btn-ghost"
-                title="Move back to unseen"
-                disabled={busy}
-                onClick={() => handleAction(() => window.api.setStatus(movie.id, 'unseen'))}
-              >
-                ↺
-              </button>
-            )}
-          </div>
+          )}
+
+          <button
+            className={`btn-ghost row-fav ${state.favorite ? 'is-fav' : ''}`}
+            title={state.favorite ? 'Remove from favorites' : 'Add to favorites'}
+            aria-label="Toggle favorite"
+            disabled={busy}
+            onClick={() => handleAction(() => window.api.setFavorite(movie.id, !state.favorite))}
+          >
+            {state.favorite ? '★' : '☆'}
+          </button>
         </div>
-
-        {showProgress ? (
-          <div className="progress">
-            <div className="progress-bar" style={{ width: `${pct}%` }} />
-            <span className="progress-label">
-              {pct}% — {progress.state}
-            </span>
-          </div>
-        ) : null}
-
-        {error ? <div className="card-error">{error}</div> : null}
       </div>
+
+      {showProgress ? (
+        <div className="row-progress">
+          <div className="progress-bar" style={{ width: `${pct}%` }} />
+          <span className="progress-label">
+            {pct}% — {progress.state}
+          </span>
+        </div>
+      ) : null}
+
+      {error ? <div className="row-error">{error}</div> : null}
     </article>
   )
 }

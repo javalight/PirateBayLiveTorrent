@@ -38,7 +38,7 @@ export function Top100View({ category }: { category: number }): JSX.Element {
         </div>
       ) : null}
 
-      <div className="grid">
+      <div className="list">
         {movies.map((card) => (
           <MovieCard
             key={card.movie.id}
