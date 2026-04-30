@@ -8,7 +8,13 @@ export const IpcChannels = {
   enrichNow: 'enricher:run',
   getSettings: 'settings:get',
   updateSettings: 'settings:update',
-  topUpdated: 'top:updated' // emitted from main → renderer (no invoke)
+  download: 'movie:download',
+  play: 'movie:play',
+  setStatus: 'movie:set-status',
+  listMovies: 'movies:list',
+  testQbit: 'qbit:test',
+  topUpdated: 'top:updated',
+  downloadProgress: 'download:progress'
 } as const
 
 export interface PollerStatusPayload {
@@ -23,4 +29,13 @@ export interface TopUpdatedPayload {
   newTorrents: number
   unlinkedCount: number
   fetchedAt: number
+}
+
+export interface DownloadProgressPayload {
+  movieId: number
+  qbitHash: string
+  state: string
+  progress: number
+  dlSpeed: number
+  done: boolean
 }

@@ -247,6 +247,20 @@ export class Dal {
     this.db.prepare(`UPDATE movie_state SET ${fields.join(', ')} WHERE movie_id = ?`).run(...values)
   }
 
+  activeDownloadHashes(): string[] {
+    const rows = this.db
+      .prepare("SELECT qbit_hash FROM movie_state WHERE status = 'downloading' AND qbit_hash IS NOT NULL")
+      .all() as Array<{ qbit_hash: string }>
+    return rows.map((r) => r.qbit_hash.toLowerCase())
+  }
+
+  movieIdByQbitHash(hash: string): number | null {
+    const r = this.db
+      .prepare('SELECT movie_id FROM movie_state WHERE qbit_hash = ?')
+      .get(hash.toLowerCase()) as { movie_id: number } | undefined
+    return r?.movie_id ?? null
+  }
+
   // -- snapshots -------------------------------------------------------------
 
   recordSnapshot(category: number, hashes: string[], now: number): void {
@@ -256,6 +270,82 @@ export class Dal {
   }
 
   // -- combined views --------------------------------------------------------
+
+  /**
+   * Movies that match arbitrary status filters and have at least one linked torrent.
+   * `inTopOnly` restricts to movies with at least one torrent currently in a Top 100.
+   * Used by the Unseen / Seen / Library views.
+   */
+  filterMovies(opts: {
+    statuses?: MovieStatus[]
+    inTopOnly?: boolean
+    excludeStatuses?: MovieStatus[]
+    sort?: 'rank' | 'seen_at' | 'downloaded_at' | 'title'
+  }): Array<{ movie: Movie; state: MovieState; bestTorrent: Torrent | null; rank: number | null }> {
+    const conds: string[] = []
+    const params: unknown[] = []
+
+    if (opts.inTopOnly) {
+      conds.push(`EXISTS (SELECT 1 FROM torrents t2 WHERE t2.movie_id = m.id AND t2.current_rank IS NOT NULL)`)
+    }
+
+    if (opts.statuses && opts.statuses.length > 0) {
+      const placeholders = opts.statuses.map(() => '?').join(',')
+      conds.push(`COALESCE(ms.status, 'unseen') IN (${placeholders})`)
+      params.push(...opts.statuses)
+    }
+
+    if (opts.excludeStatuses && opts.excludeStatuses.length > 0) {
+      const placeholders = opts.excludeStatuses.map(() => '?').join(',')
+      conds.push(`COALESCE(ms.status, 'unseen') NOT IN (${placeholders})`)
+      params.push(...opts.excludeStatuses)
+    }
+
+    const where = conds.length > 0 ? `WHERE ${conds.join(' AND ')}` : ''
+
+    let orderBy = 'm.title COLLATE NOCASE ASC'
+    if (opts.sort === 'rank') orderBy = '(SELECT MIN(current_rank) FROM torrents WHERE movie_id = m.id) ASC NULLS LAST'
+    else if (opts.sort === 'seen_at') orderBy = 'ms.seen_at DESC'
+    else if (opts.sort === 'downloaded_at') orderBy = 'ms.downloaded_at DESC'
+
+    const rows = this.db
+      .prepare(
+        `SELECT m.*,
+                COALESCE(ms.status, 'unseen') AS s_status,
+                ms.file_path AS s_file_path,
+                ms.qbit_hash AS s_qbit_hash,
+                ms.downloaded_at AS s_downloaded_at,
+                ms.seen_at AS s_seen_at,
+                (SELECT MIN(current_rank) FROM torrents WHERE movie_id = m.id AND current_rank IS NOT NULL) AS rank
+         FROM movies m
+         LEFT JOIN movie_state ms ON ms.movie_id = m.id
+         ${where}
+         ORDER BY ${orderBy}`
+      )
+      .all(...params) as Array<MovieRow & {
+        s_status: MovieStatus
+        s_file_path: string | null
+        s_qbit_hash: string | null
+        s_downloaded_at: number | null
+        s_seen_at: number | null
+        rank: number | null
+      }>
+
+    return rows.map((r) => {
+      const movie = movieFromRow(r)
+      const state: MovieState = {
+        movieId: r.id,
+        status: r.s_status,
+        filePath: r.s_file_path,
+        qbitHash: r.s_qbit_hash,
+        downloadedAt: r.s_downloaded_at,
+        seenAt: r.s_seen_at
+      }
+      const torrents = this.torrentsForMovie(r.id)
+      const bestTorrent = torrents[0] ?? null
+      return { movie, state, bestTorrent, rank: r.rank }
+    })
+  }
 
   /**
    * Movies currently in the Top 100 of the given category, with their state

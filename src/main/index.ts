@@ -8,11 +8,15 @@ import { Poller } from './sources/poller.js'
 import { Enricher } from './enrichment/enricher.js'
 import { TmdbClient } from './enrichment/tmdb.js'
 import { getSettings, updateSettings, type UpdateSettingsInput } from './config.js'
+import { DownloadManager } from './torrents/manager.js'
+import { openInDefaultApp } from './player.js'
+import type { MovieStatus } from '../shared/types.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 let dal: Dal | null = null
 let poller: Poller | null = null
+let downloads: DownloadManager | null = null
 
 const buildEnricher = (d: Dal): Enricher => {
   const settings = getSettings()
@@ -44,7 +48,7 @@ function createWindow(): void {
   }
 }
 
-function registerIpc(d: Dal, p: Poller): void {
+function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
   ipcMain.handle(IpcChannels.ping, () => {
     const row = getDb().prepare('SELECT MAX(version) AS v FROM schema_version').get() as { v: number | null }
     return `pong (db schema v${row.v ?? 0})`
@@ -62,11 +66,9 @@ function registerIpc(d: Dal, p: Poller): void {
   })
 
   ipcMain.handle(IpcChannels.topMovies, (_e, category: number) => d.topMovies(category))
+  ipcMain.handle(IpcChannels.listMovies, (_e, arg: Parameters<Dal['filterMovies']>[0]) => d.filterMovies(arg))
 
-  ipcMain.handle(IpcChannels.enrichNow, async () => {
-    const enricher = buildEnricher(d)
-    return enricher.enrichPending()
-  })
+  ipcMain.handle(IpcChannels.enrichNow, async () => buildEnricher(d).enrichPending())
 
   ipcMain.handle(IpcChannels.getSettings, () => getSettings())
   ipcMain.handle(IpcChannels.updateSettings, (_e, patch: UpdateSettingsInput) => {
@@ -77,6 +79,20 @@ function registerIpc(d: Dal, p: Poller): void {
     })
     return next
   })
+
+  ipcMain.handle(IpcChannels.download, async (_e, movieId: number) => dl.download(movieId))
+  ipcMain.handle(IpcChannels.play, async (_e, movieId: number) => {
+    const row = getDb()
+      .prepare('SELECT file_path FROM movie_state WHERE movie_id = ?')
+      .get(movieId) as { file_path: string | null } | undefined
+    if (!row?.file_path) throw new Error('No file recorded for this movie')
+    await openInDefaultApp(row.file_path)
+    d.setStatus(movieId, 'seen', { seenAt: Date.now() })
+  })
+  ipcMain.handle(IpcChannels.setStatus, (_e, movieId: number, status: MovieStatus) => {
+    d.setStatus(movieId, status, status === 'seen' ? { seenAt: Date.now() } : {})
+  })
+  ipcMain.handle(IpcChannels.testQbit, () => dl.testConnection())
 }
 
 app.whenReady().then(() => {
@@ -86,12 +102,12 @@ app.whenReady().then(() => {
     categories: settings.categories,
     intervalMs: settings.pollIntervalMin * 60 * 1000
   })
+  downloads = new DownloadManager(dal)
 
   poller.onResult(async (r) => {
     if (r.newTorrents === 0 && r.unlinkedCount === 0) return
     try {
-      const enricher = buildEnricher(dal!)
-      const result = await enricher.enrichPending()
+      const result = await buildEnricher(dal!).enrichPending()
       console.log('[enricher]', result)
       for (const win of BrowserWindow.getAllWindows()) {
         win.webContents.send(IpcChannels.topUpdated, { ...r, fetchedAt: Date.now() })
@@ -101,8 +117,9 @@ app.whenReady().then(() => {
     }
   })
 
-  registerIpc(dal, poller)
+  registerIpc(dal, poller, downloads)
   poller.start()
+  downloads.start()
 
   createWindow()
 
@@ -113,11 +130,13 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   poller?.stop()
+  downloads?.stop()
   closeDb()
   if (process.platform !== 'darwin') app.quit()
 })
 
 app.on('before-quit', () => {
   poller?.stop()
+  downloads?.stop()
   closeDb()
 })

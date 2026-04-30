@@ -83,6 +83,21 @@ button:disabled { opacity: 0.5; cursor: default; }
   margin-bottom: 24px;
 }
 .view-header h2 { margin: 0; font-size: 20px; }
+.view-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.search {
+  background: #0a0b0e;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: #fff;
+  font: inherit;
+  width: 200px;
+}
+.search:focus { outline: none; border-color: var(--accent); }
 
 /* Grid */
 .grid {
@@ -139,6 +154,68 @@ button:disabled { opacity: 0.5; cursor: default; }
   color: var(--text-dim);
   font-size: 11px;
   margin-bottom: 8px;
+}
+.card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.card-actions {
+  display: flex;
+  gap: 4px;
+}
+.btn-action {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #0e0f12;
+  font-weight: 600;
+}
+.btn-action:hover { background: #ff7e4f; }
+.btn-action:disabled { background: #444; border-color: #444; color: #999; }
+.btn-ghost {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-mid);
+}
+.btn-ghost:hover { color: #fff; border-color: var(--text-mid); }
+.progress {
+  position: relative;
+  height: 14px;
+  margin-top: 8px;
+  background: #0a0b0e;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #ff7e4f);
+  transition: width 0.3s;
+}
+.progress-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  line-height: 14px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 0 2px rgba(0,0,0,0.8);
+  letter-spacing: 0.02em;
+}
+.card-error {
+  margin-top: 6px;
+  font-size: 10px;
+  color: #ff8090;
+  word-break: break-word;
 }
 
 /* Badges */

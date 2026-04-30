@@ -1,0 +1,28 @@
+appId: com.lightprogramming.piratebaylivetorrent
+productName: PirateBay Live Torrent
+directories:
+  output: dist
+  buildResources: resources
+files:
+  - out/**/*
+  - package.json
+  - "!**/.vite/**"
+  - "!**/{.DS_Store,.git,.idea,.vscode}/**"
+asarUnpack:
+  - "**/node_modules/better-sqlite3/**"
+mac:
+  target:
+    - dmg
+    - zip
+  category: public.app-category.entertainment
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  identity: null
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications

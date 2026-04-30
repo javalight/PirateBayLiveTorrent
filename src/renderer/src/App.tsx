@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import type { ListMoviesArg } from '@shared/api'
 import { Top100View } from './views/Top100'
 import { SettingsView } from './views/Settings'
+import { FilteredView } from './views/Filtered'
 
 type Tab = 'top100' | 'unseen' | 'library' | 'seen' | 'settings'
 
@@ -14,6 +16,19 @@ const TABS: Array<{ id: Tab; label: string }> = [
 
 export function App(): JSX.Element {
   const [tab, setTab] = useState<Tab>('top100')
+
+  const unseenQuery = useMemo<ListMoviesArg>(
+    () => ({ statuses: ['unseen'], inTopOnly: true, sort: 'rank' }),
+    []
+  )
+  const libraryQuery = useMemo<ListMoviesArg>(
+    () => ({ excludeStatuses: ['hidden'], sort: 'title' }),
+    []
+  )
+  const seenQuery = useMemo<ListMoviesArg>(
+    () => ({ statuses: ['seen', 'downloaded'], sort: 'seen_at' }),
+    []
+  )
 
   return (
     <div className="app">
@@ -33,15 +48,29 @@ export function App(): JSX.Element {
       </aside>
       <main className="content">
         {tab === 'top100' && <Top100View category={201} />}
-        {tab === 'settings' && <SettingsView />}
-        {(tab === 'unseen' || tab === 'library' || tab === 'seen') && (
-          <section className="view">
-            <header className="view-header">
-              <h2>{TABS.find((t) => t.id === tab)?.label}</h2>
-            </header>
-            <p className="empty">Coming up next milestone.</p>
-          </section>
+        {tab === 'unseen' && (
+          <FilteredView
+            title="Unseen — Top 100"
+            emptyText="Nothing unseen in the current Top 100. Either you've watched everything or the first poll hasn't completed yet."
+            query={unseenQuery}
+          />
         )}
+        {tab === 'library' && (
+          <FilteredView
+            title="Library"
+            emptyText="Library is empty. Wait for the first poll to populate it."
+            query={libraryQuery}
+            searchable
+          />
+        )}
+        {tab === 'seen' && (
+          <FilteredView
+            title="Seen pile"
+            emptyText="No seen movies yet. Download or mark something as seen and it'll appear here."
+            query={seenQuery}
+          />
+        )}
+        {tab === 'settings' && <SettingsView />}
       </main>
     </div>
   )
