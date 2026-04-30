@@ -348,12 +348,32 @@ button:disabled { opacity: 0.5; cursor: default; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.row-secondary {
+  position: relative;
+  height: 16px;
+}
+.row-subtitle, .row-meta {
+  position: absolute;
+  inset: 0;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.1s;
+}
+.row-subtitle {
+  color: var(--text-mid);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  opacity: 0;
+  pointer-events: none;
+}
 .row-meta {
   display: flex;
   gap: 12px;
   color: var(--text-dim);
-  font-size: 11px;
 }
+.row:hover .row-subtitle { opacity: 1; }
+.row:hover .row-meta { opacity: 0; }
 .row-actions {
   display: flex;
   gap: 4px;

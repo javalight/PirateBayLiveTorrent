@@ -4,6 +4,17 @@ import type { DownloadProgressPayload } from '@shared/ipc'
 import { STREAM_PLAY_THRESHOLD } from '@shared/settings'
 import { StatusBadge } from './StatusBadge'
 
+const formatSize = (bytes: number): string => {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let n = bytes
+  let i = 0
+  while (n >= 1024 && i < units.length - 1) {
+    n /= 1024
+    i++
+  }
+  return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${units[i]}`
+}
+
 export function MovieCard({
   card,
   progress,
@@ -53,10 +64,16 @@ export function MovieCard({
           <h3 className="row-title" title={movie.title}>
             {movie.title}
           </h3>
-          <div className="row-meta">
-            {movie.year ? <span>{movie.year}</span> : null}
-            {rating ? <span>★ {rating}</span> : null}
-            {bestTorrent.seeders ? <span>{bestTorrent.seeders} seed</span> : null}
+          <div className="row-secondary">
+            <div className="row-meta">
+              {movie.year ? <span>{movie.year}</span> : null}
+              {rating ? <span>★ {rating}</span> : null}
+              {bestTorrent.sizeBytes ? <span>{formatSize(bestTorrent.sizeBytes)}</span> : null}
+              {bestTorrent.seeders ? <span>{bestTorrent.seeders} seed</span> : null}
+            </div>
+            <div className="row-subtitle" title={bestTorrent.name}>
+              {bestTorrent.name}
+            </div>
           </div>
         </div>
 
