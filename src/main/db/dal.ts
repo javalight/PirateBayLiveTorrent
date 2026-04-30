@@ -422,7 +422,8 @@ export class Dal {
     inTopOnly?: boolean
     excludeStatuses?: MovieStatus[]
     favoritesOnly?: boolean
-    sort?: 'rank' | 'seen_at' | 'downloaded_at' | 'title' | 'discovery'
+    downloadActivityOnly?: boolean
+    sort?: 'rank' | 'seen_at' | 'downloaded_at' | 'title' | 'discovery' | 'activity'
   }): Array<{ movie: Movie; state: MovieState; bestTorrent: Torrent | null; rank: number | null }> {
     const conds: string[] = [
       `EXISTS (
@@ -458,6 +459,10 @@ export class Dal {
       conds.push('ms.favorite = 1')
     }
 
+    if (opts.downloadActivityOnly) {
+      conds.push(`(COALESCE(ms.status, 'unseen') = 'downloading' OR ms.downloaded_at IS NOT NULL)`)
+    }
+
     const where = conds.length > 0 ? `WHERE ${conds.join(' AND ')}` : ''
 
     const rankSubquery = `(SELECT MIN(tt.rank) FROM topic_torrents tt
@@ -477,6 +482,10 @@ export class Dal {
     else if (opts.sort === 'discovery') {
       orderBy = `${rankSubquery} ASC NULLS LAST, ${recencySubquery} DESC`
       orderParams = [opts.topicId, opts.topicId]
+    } else if (opts.sort === 'activity') {
+      // Currently downloading first, then by most-recent download.
+      orderBy = `CASE WHEN COALESCE(ms.status, 'unseen') = 'downloading' THEN 0 ELSE 1 END ASC,
+                 ms.downloaded_at DESC NULLS LAST`
     }
 
     const rows = this.db

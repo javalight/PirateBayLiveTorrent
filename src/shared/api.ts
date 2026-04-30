@@ -24,7 +24,8 @@ export interface ListMoviesArg {
   excludeStatuses?: MovieStatus[]
   inTopOnly?: boolean
   favoritesOnly?: boolean
-  sort?: 'rank' | 'seen_at' | 'downloaded_at' | 'title' | 'discovery'
+  downloadActivityOnly?: boolean
+  sort?: 'rank' | 'seen_at' | 'downloaded_at' | 'title' | 'discovery' | 'activity'
 }
 
 export interface CreateTopicArg {

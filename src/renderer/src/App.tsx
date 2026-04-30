@@ -7,12 +7,13 @@ import { FilteredView } from './views/Filtered'
 import { MasterView } from './views/Master'
 import { NewTopic } from './views/NewTopic'
 
-type Tab = 'top100' | 'unseen' | 'favorites' | 'seen' | 'hidden'
+type Tab = 'top100' | 'unseen' | 'favorites' | 'downloads' | 'seen' | 'hidden'
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'top100', label: 'Top 100' },
   { id: 'unseen', label: 'Unseen' },
   { id: 'favorites', label: '★ Favorites' },
+  { id: 'downloads', label: 'Downloads' },
   { id: 'seen', label: 'Seen' },
   { id: 'hidden', label: 'Hidden' }
 ]
@@ -154,6 +155,10 @@ function TopicView({ topic, tab }: { topic: Topic; tab: Tab }): JSX.Element {
     () => ({ topicId: topic.id, favoritesOnly: true, sort: 'discovery' }),
     [topic.id]
   )
+  const downloadsQuery = useMemo<ListMoviesArg>(
+    () => ({ topicId: topic.id, downloadActivityOnly: true, sort: 'activity' }),
+    [topic.id]
+  )
   const seenQuery = useMemo<ListMoviesArg>(
     () => ({ topicId: topic.id, statuses: ['seen', 'downloaded'], sort: 'seen_at' }),
     [topic.id]
@@ -180,6 +185,16 @@ function TopicView({ topic, tab }: { topic: Topic; tab: Tab }): JSX.Element {
         title={`${topic.name} — Favorites`}
         emptyText="No favorites in this topic yet."
         query={favoritesQuery}
+        searchable
+      />
+    )
+  }
+  if (tab === 'downloads') {
+    return (
+      <FilteredView
+        title={`${topic.name} — Downloads`}
+        emptyText="No download activity yet. Click Download on something and it'll show up here."
+        query={downloadsQuery}
         searchable
       />
     )
