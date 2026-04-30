@@ -246,6 +246,12 @@ button:disabled { opacity: 0.5; cursor: default; }
   color: var(--text-mid);
 }
 .btn-ghost:hover { color: #fff; border-color: var(--text-mid); }
+.btn-ghost.icon-only {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+}
 .progress {
   position: relative;
   height: 14px;

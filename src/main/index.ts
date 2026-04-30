@@ -98,6 +98,13 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
     d.setFavorite(movieId, favorite)
   })
   ipcMain.handle(IpcChannels.testQbit, () => dl.testConnection())
+  ipcMain.handle(IpcChannels.revealItem, async (_e, movieId: number) => {
+    const row = getDb()
+      .prepare('SELECT file_path FROM movie_state WHERE movie_id = ?')
+      .get(movieId) as { file_path: string | null } | undefined
+    if (!row?.file_path) throw new Error('No file recorded for this movie')
+    shell.showItemInFolder(row.file_path)
+  })
   ipcMain.handle(IpcChannels.openExternal, async (_e, url: string) => {
     if (typeof url !== 'string' || !/^https?:/i.test(url)) {
       throw new Error('openExternal only accepts http/https URLs')

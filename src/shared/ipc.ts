@@ -16,6 +16,7 @@ export const IpcChannels = {
   testQbit: 'qbit:test',
   openPath: 'shell:open-path',
   openExternal: 'shell:open-external',
+  revealItem: 'shell:reveal-item',
   topUpdated: 'top:updated',
   downloadProgress: 'download:progress'
 } as const

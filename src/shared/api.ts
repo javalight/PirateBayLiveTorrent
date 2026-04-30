@@ -55,6 +55,7 @@ export interface AppApi {
   testQbit: () => Promise<{ ok: boolean; message: string }>
   openPath: (path: string) => Promise<void>
   openExternal: (url: string) => Promise<void>
+  revealItem: (movieId: number) => Promise<void>
   onTopUpdated: (cb: (payload: TopUpdatedPayload) => void) => () => void
   onDownloadProgress: (cb: (payload: DownloadProgressPayload) => void) => () => void
 }

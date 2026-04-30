@@ -18,6 +18,7 @@ const api: AppApi = {
   testQbit: () => ipcRenderer.invoke(IpcChannels.testQbit),
   openPath: (path) => ipcRenderer.invoke(IpcChannels.openPath, path),
   openExternal: (url) => ipcRenderer.invoke(IpcChannels.openExternal, url),
+  revealItem: (movieId) => ipcRenderer.invoke(IpcChannels.revealItem, movieId),
   onTopUpdated: (cb) => {
     const handler = (_e: Electron.IpcRendererEvent, payload: TopUpdatedPayload): void => cb(payload)
     ipcRenderer.on(IpcChannels.topUpdated, handler)
