@@ -1,5 +1,5 @@
 import { BrowserWindow } from 'electron'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, rmSync, statSync } from 'node:fs'
 import { Dal } from '../db/dal.js'
 import { getSettings } from '../config.js'
 import { isComplete, QbitError, QbittorrentClient } from './qbittorrent.js'
@@ -63,6 +63,49 @@ export class DownloadManager {
       dlSpeed: 0,
       done: false
     })
+  }
+
+  /**
+   * Delete the downloaded file(s) for a movie to reclaim disk space.
+   * Keeps the seen/status state and history intact — only the file_path and
+   * qbit_hash are cleared so the UI knows the file is gone.
+   */
+  async deleteFile(movieId: number): Promise<void> {
+    const row = this.dbRow(movieId)
+    if (!row?.file_path && !row?.qbit_hash) {
+      throw new Error('Nothing to delete — no file recorded for this movie')
+    }
+    const settings = getSettings()
+
+    let qbitDeleted = false
+    if (row.qbit_hash && settings.qbit.password) {
+      try {
+        const qbit = new QbittorrentClient(settings.qbit.host, settings.qbit.username, settings.qbit.password)
+        await qbit.deleteTorrent(row.qbit_hash, true)
+        qbitDeleted = true
+      } catch (err) {
+        console.warn('[downloads] qBit delete failed, falling back to fs:', err)
+      }
+    }
+
+    if (!qbitDeleted && row.file_path) {
+      try {
+        const stat = statSync(row.file_path)
+        rmSync(row.file_path, { recursive: stat.isDirectory(), force: true })
+      } catch (err) {
+        console.warn('[downloads] fs delete failed:', err)
+        // Continue — we still want to clear the DB reference even if file was already gone.
+      }
+    }
+
+    this.dal.clearFile(movieId)
+    this.active.delete((row.qbit_hash ?? '').toLowerCase())
+  }
+
+  private dbRow(movieId: number): { file_path: string | null; qbit_hash: string | null } | undefined {
+    return (this.dal as unknown as { db: import('better-sqlite3').Database }).db
+      .prepare('SELECT file_path, qbit_hash FROM movie_state WHERE movie_id = ?')
+      .get(movieId) as { file_path: string | null; qbit_hash: string | null } | undefined
   }
 
   async testConnection(): Promise<{ ok: boolean; message: string }> {

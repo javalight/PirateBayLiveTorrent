@@ -123,6 +123,26 @@ export function MovieCard({
             </button>
           )}
 
+          {state.filePath && (
+            <button
+              className="btn-ghost icon-only btn-danger"
+              title="Delete the downloaded file (keeps Seen status)"
+              aria-label="Delete file"
+              disabled={busy}
+              onClick={() => {
+                if (!confirm(`Delete the downloaded file for "${movie.title}"?\n\nThis frees up disk space. The movie will stay in your Seen list.`)) return
+                handleAction(() => window.api.deleteFile(movie.id))
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+              </svg>
+            </button>
+          )}
+
           {canStreamNow && (
             <button
               className="btn-action"

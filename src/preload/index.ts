@@ -17,6 +17,7 @@ const api: AppApi = {
   getSettings: () => ipcRenderer.invoke(IpcChannels.getSettings),
   updateSettings: (patch) => ipcRenderer.invoke(IpcChannels.updateSettings, patch),
   download: (movieId) => ipcRenderer.invoke(IpcChannels.download, movieId),
+  deleteFile: (movieId) => ipcRenderer.invoke(IpcChannels.deleteFile, movieId),
   play: (movieId) => ipcRenderer.invoke(IpcChannels.play, movieId),
   setStatus: (movieId, status) => ipcRenderer.invoke(IpcChannels.setStatus, movieId, status),
   setFavorite: (movieId, favorite) => ipcRenderer.invoke(IpcChannels.setFavorite, movieId, favorite),

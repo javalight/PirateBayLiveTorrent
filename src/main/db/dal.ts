@@ -347,6 +347,13 @@ export class Dal {
     this.db.prepare('UPDATE movie_state SET favorite = ? WHERE movie_id = ?').run(favorite ? 1 : 0, movieId)
   }
 
+  /** Clear the on-disk file reference but keep status (seen/etc) intact. */
+  clearFile(movieId: number): void {
+    this.db
+      .prepare('UPDATE movie_state SET file_path = NULL, qbit_hash = NULL WHERE movie_id = ?')
+      .run(movieId)
+  }
+
   setStatus(
     movieId: number,
     status: MovieStatus,

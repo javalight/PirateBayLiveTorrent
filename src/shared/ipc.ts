@@ -14,6 +14,7 @@ export const IpcChannels = {
   getSettings: 'settings:get',
   updateSettings: 'settings:update',
   download: 'movie:download',
+  deleteFile: 'movie:delete-file',
   play: 'movie:play',
   setStatus: 'movie:set-status',
   setFavorite: 'movie:set-favorite',

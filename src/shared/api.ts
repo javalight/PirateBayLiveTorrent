@@ -71,6 +71,7 @@ export interface AppApi {
   getSettings: () => Promise<AppSettings>
   updateSettings: (patch: UpdateSettingsArg) => Promise<AppSettings>
   download: (movieId: number) => Promise<void>
+  deleteFile: (movieId: number) => Promise<void>
   play: (movieId: number) => Promise<void>
   setStatus: (movieId: number, status: MovieStatus) => Promise<void>
   setFavorite: (movieId: number, favorite: boolean) => Promise<void>

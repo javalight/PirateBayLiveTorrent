@@ -90,6 +90,18 @@ export class QbittorrentClient {
     }
   }
 
+  async deleteTorrent(hash: string, deleteFiles: boolean): Promise<void> {
+    const form = new URLSearchParams()
+    form.set('hashes', hash.toLowerCase())
+    form.set('deleteFiles', deleteFiles ? 'true' : 'false')
+    const res = await this.authedFetch('/api/v2/torrents/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form.toString()
+    })
+    if (!res.ok) throw new QbitError(`qBittorrent delete failed: ${res.status}`)
+  }
+
   async info(hashes: string[]): Promise<QbitInfo[]> {
     const params = new URLSearchParams()
     if (hashes.length > 0) params.set('hashes', hashes.map((h) => h.toLowerCase()).join('|'))

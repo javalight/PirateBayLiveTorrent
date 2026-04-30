@@ -96,6 +96,7 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
   })
 
   ipcMain.handle(IpcChannels.download, async (_e, movieId: number) => dl.download(movieId))
+  ipcMain.handle(IpcChannels.deleteFile, async (_e, movieId: number) => dl.deleteFile(movieId))
   ipcMain.handle(IpcChannels.play, async (_e, movieId: number) => {
     const row = getDb()
       .prepare('SELECT file_path FROM movie_state WHERE movie_id = ?')

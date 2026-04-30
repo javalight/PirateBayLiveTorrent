@@ -438,6 +438,10 @@ button:disabled { opacity: 0.5; cursor: default; }
   justify-content: center;
   padding: 4px 6px;
 }
+.btn-ghost.btn-danger:hover {
+  color: #ff8090;
+  border-color: #ff8090;
+}
 .progress {
   position: relative;
   height: 14px;
