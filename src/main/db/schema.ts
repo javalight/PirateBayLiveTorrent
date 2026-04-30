@@ -41,10 +41,12 @@ CREATE TABLE IF NOT EXISTS movie_state (
   file_path     TEXT,
   qbit_hash     TEXT,
   downloaded_at INTEGER,
-  seen_at       INTEGER
+  seen_at       INTEGER,
+  favorite      INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS movie_state_status_idx ON movie_state (status);
+CREATE INDEX IF NOT EXISTS movie_state_favorite_idx ON movie_state (favorite);
 
 CREATE TABLE IF NOT EXISTS top_snapshots (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,

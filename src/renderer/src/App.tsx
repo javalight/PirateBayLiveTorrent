@@ -4,13 +4,14 @@ import { Top100View } from './views/Top100'
 import { SettingsView } from './views/Settings'
 import { FilteredView } from './views/Filtered'
 
-type Tab = 'top100' | 'unseen' | 'library' | 'seen' | 'settings'
+type Tab = 'top100' | 'unseen' | 'favorites' | 'seen' | 'hidden' | 'settings'
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'top100', label: 'Top 100' },
   { id: 'unseen', label: 'Unseen' },
-  { id: 'library', label: 'Library' },
+  { id: 'favorites', label: '★ Favorites' },
   { id: 'seen', label: 'Seen' },
+  { id: 'hidden', label: 'Hidden' },
   { id: 'settings', label: 'Settings' }
 ]
 
@@ -18,15 +19,19 @@ export function App(): JSX.Element {
   const [tab, setTab] = useState<Tab>('top100')
 
   const unseenQuery = useMemo<ListMoviesArg>(
-    () => ({ statuses: ['unseen'], inTopOnly: true, sort: 'rank' }),
+    () => ({ statuses: ['unseen'], sort: 'discovery' }),
     []
   )
-  const libraryQuery = useMemo<ListMoviesArg>(
-    () => ({ excludeStatuses: ['hidden'], sort: 'title' }),
+  const favoritesQuery = useMemo<ListMoviesArg>(
+    () => ({ favoritesOnly: true, sort: 'discovery' }),
     []
   )
   const seenQuery = useMemo<ListMoviesArg>(
     () => ({ statuses: ['seen', 'downloaded'], sort: 'seen_at' }),
+    []
+  )
+  const hiddenQuery = useMemo<ListMoviesArg>(
+    () => ({ statuses: ['hidden'], sort: 'title' }),
     []
   )
 
@@ -50,24 +55,34 @@ export function App(): JSX.Element {
         {tab === 'top100' && <Top100View category={201} />}
         {tab === 'unseen' && (
           <FilteredView
-            title="Unseen — Top 100"
-            emptyText="Nothing unseen in the current Top 100. Either you've watched everything or the first poll hasn't completed yet."
+            title="Unseen"
+            emptyText="Nothing unseen yet. Wait for the first poll, or move things back here from Seen / Hidden."
             query={unseenQuery}
+            searchable
           />
         )}
-        {tab === 'library' && (
+        {tab === 'favorites' && (
           <FilteredView
-            title="Library"
-            emptyText="Library is empty. Wait for the first poll to populate it."
-            query={libraryQuery}
+            title="Favorites"
+            emptyText="No favorites yet. Tap the ☆ on a movie to add it here."
+            query={favoritesQuery}
             searchable
           />
         )}
         {tab === 'seen' && (
           <FilteredView
-            title="Seen pile"
+            title="Seen"
             emptyText="No seen movies yet. Download or mark something as seen and it'll appear here."
             query={seenQuery}
+            searchable
+          />
+        )}
+        {tab === 'hidden' && (
+          <FilteredView
+            title="Hidden"
+            emptyText="Nothing hidden. Hit the eye icon on a card to dismiss something — it'll land here."
+            query={hiddenQuery}
+            searchable
           />
         )}
         {tab === 'settings' && <SettingsView />}

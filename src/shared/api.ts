@@ -14,7 +14,8 @@ export interface ListMoviesArg {
   statuses?: MovieStatus[]
   excludeStatuses?: MovieStatus[]
   inTopOnly?: boolean
-  sort?: 'rank' | 'seen_at' | 'downloaded_at' | 'title'
+  favoritesOnly?: boolean
+  sort?: 'rank' | 'seen_at' | 'downloaded_at' | 'title' | 'discovery'
 }
 import type { DownloadProgressPayload, PollerStatusPayload, TopUpdatedPayload } from './ipc.js'
 import type { AppSettings } from './settings.js'
@@ -50,6 +51,7 @@ export interface AppApi {
   download: (movieId: number) => Promise<void>
   play: (movieId: number) => Promise<void>
   setStatus: (movieId: number, status: MovieStatus) => Promise<void>
+  setFavorite: (movieId: number, favorite: boolean) => Promise<void>
   testQbit: () => Promise<{ ok: boolean; message: string }>
   openPath: (path: string) => Promise<void>
   onTopUpdated: (cb: (payload: TopUpdatedPayload) => void) => () => void

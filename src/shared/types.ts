@@ -40,6 +40,7 @@ export interface MovieState {
   qbitHash: string | null
   downloadedAt: number | null
   seenAt: number | null
+  favorite: boolean
 }
 
 export interface MovieRow {

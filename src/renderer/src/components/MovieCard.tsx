@@ -42,6 +42,18 @@ export function MovieCard({
   return (
     <article className="card">
       <div className="card-rank">#{rank}</div>
+      <button
+        className={`card-fav ${state.favorite ? 'is-fav' : ''}`}
+        title={state.favorite ? 'Remove from favorites' : 'Add to favorites'}
+        aria-label="Toggle favorite"
+        disabled={busy}
+        onClick={(e) => {
+          e.stopPropagation()
+          handleAction(() => window.api.setFavorite(movie.id, !state.favorite))
+        }}
+      >
+        {state.favorite ? '★' : '☆'}
+      </button>
       <div className="card-poster">
         {movie.posterUrl ? (
           <img src={movie.posterUrl} alt={movie.title} loading="lazy" />
@@ -90,16 +102,36 @@ export function MovieCard({
               </button>
             )}
             {state.status === 'unseen' && (
-              <button
-                className="btn-ghost"
-                title="Mark as seen without downloading"
-                disabled={busy}
-                onClick={() => handleAction(() => window.api.setStatus(movie.id, 'seen'))}
-              >
-                ✓
-              </button>
+              <>
+                <button
+                  className="btn-ghost"
+                  title="Mark as seen without downloading"
+                  disabled={busy}
+                  onClick={() => handleAction(() => window.api.setStatus(movie.id, 'seen'))}
+                >
+                  ✓
+                </button>
+                <button
+                  className="btn-ghost"
+                  title="Hide — won't show in Unseen anymore"
+                  disabled={busy}
+                  onClick={() => handleAction(() => window.api.setStatus(movie.id, 'hidden'))}
+                >
+                  ⊘
+                </button>
+              </>
             )}
             {state.status === 'seen' && (
+              <button
+                className="btn-ghost"
+                title="Move back to unseen"
+                disabled={busy}
+                onClick={() => handleAction(() => window.api.setStatus(movie.id, 'unseen'))}
+              >
+                ↺
+              </button>
+            )}
+            {state.status === 'hidden' && (
               <button
                 className="btn-ghost"
                 title="Move back to unseen"

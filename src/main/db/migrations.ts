@@ -5,8 +5,19 @@ const migrations: Array<{ version: number; up: (db: Database.Database) => void }
   {
     version: 1,
     up: (db) => db.exec(schemaV1)
+  },
+  {
+    // For DBs created before favorites existed: add the column. Fresh installs
+    // running v1 already include it via CREATE TABLE.
+    version: 2,
+    up: (db) => {
+      const cols = db.prepare("PRAGMA table_info('movie_state')").all() as Array<{ name: string }>
+      if (!cols.some((c) => c.name === 'favorite')) {
+        db.exec('ALTER TABLE movie_state ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0')
+      }
+      db.exec('CREATE INDEX IF NOT EXISTS movie_state_favorite_idx ON movie_state (favorite)')
+    }
   }
-  // Future migrations append here.
 ]
 
 export function runMigrations(db: Database.Database): void {

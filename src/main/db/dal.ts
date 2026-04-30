@@ -36,6 +36,7 @@ interface MovieStateRow {
   qbit_hash: string | null
   downloaded_at: number | null
   seen_at: number | null
+  favorite: number
 }
 
 const torrentFromRow = (r: TorrentRow): Torrent => ({
@@ -72,7 +73,8 @@ const stateFromRow = (r: MovieStateRow): MovieState => ({
   filePath: r.file_path,
   qbitHash: r.qbit_hash,
   downloadedAt: r.downloaded_at,
-  seenAt: r.seen_at
+  seenAt: r.seen_at,
+  favorite: r.favorite === 1
 })
 
 export interface UpsertTorrentInput {
@@ -215,8 +217,14 @@ export class Dal {
       filePath: null,
       qbitHash: null,
       downloadedAt: null,
-      seenAt: null
+      seenAt: null,
+      favorite: false
     }
+  }
+
+  setFavorite(movieId: number, favorite: boolean): void {
+    this.ensureState(movieId)
+    this.db.prepare('UPDATE movie_state SET favorite = ? WHERE movie_id = ?').run(favorite ? 1 : 0, movieId)
   }
 
   setStatus(
@@ -285,7 +293,8 @@ export class Dal {
     statuses?: MovieStatus[]
     inTopOnly?: boolean
     excludeStatuses?: MovieStatus[]
-    sort?: 'rank' | 'seen_at' | 'downloaded_at' | 'title'
+    favoritesOnly?: boolean
+    sort?: 'rank' | 'seen_at' | 'downloaded_at' | 'title' | 'discovery'
   }): Array<{ movie: Movie; state: MovieState; bestTorrent: Torrent | null; rank: number | null }> {
     const conds: string[] = []
     const params: unknown[] = []
@@ -306,12 +315,23 @@ export class Dal {
       params.push(...opts.excludeStatuses)
     }
 
+    if (opts.favoritesOnly) {
+      conds.push('ms.favorite = 1')
+    }
+
     const where = conds.length > 0 ? `WHERE ${conds.join(' AND ')}` : ''
 
     let orderBy = 'm.title COLLATE NOCASE ASC'
     if (opts.sort === 'rank') orderBy = '(SELECT MIN(current_rank) FROM torrents WHERE movie_id = m.id) ASC NULLS LAST'
     else if (opts.sort === 'seen_at') orderBy = 'ms.seen_at DESC'
     else if (opts.sort === 'downloaded_at') orderBy = 'ms.downloaded_at DESC'
+    else if (opts.sort === 'discovery') {
+      // Currently-ranked first (by rank), then everything else by most-recently-encountered.
+      orderBy = `
+        (SELECT MIN(current_rank) FROM torrents WHERE movie_id = m.id) ASC NULLS LAST,
+        (SELECT MAX(first_seen_at) FROM torrents WHERE movie_id = m.id) DESC
+      `
+    }
 
     const rows = this.db
       .prepare(
@@ -321,6 +341,7 @@ export class Dal {
                 ms.qbit_hash AS s_qbit_hash,
                 ms.downloaded_at AS s_downloaded_at,
                 ms.seen_at AS s_seen_at,
+                COALESCE(ms.favorite, 0) AS s_favorite,
                 (SELECT MIN(current_rank) FROM torrents WHERE movie_id = m.id AND current_rank IS NOT NULL) AS rank
          FROM movies m
          LEFT JOIN movie_state ms ON ms.movie_id = m.id
@@ -333,6 +354,7 @@ export class Dal {
         s_qbit_hash: string | null
         s_downloaded_at: number | null
         s_seen_at: number | null
+        s_favorite: number
         rank: number | null
       }>
 
@@ -344,7 +366,8 @@ export class Dal {
         filePath: r.s_file_path,
         qbitHash: r.s_qbit_hash,
         downloadedAt: r.s_downloaded_at,
-        seenAt: r.s_seen_at
+        seenAt: r.s_seen_at,
+        favorite: r.s_favorite === 1
       }
       const torrents = this.torrentsForMovie(r.id)
       const bestTorrent = torrents[0] ?? null
@@ -363,7 +386,8 @@ export class Dal {
                 m.poster_url AS m_poster_url, m.plot AS m_plot, m.rating AS m_rating,
                 m.runtime_min AS m_runtime_min, m.genres_json AS m_genres_json,
                 ms.status AS s_status, ms.file_path AS s_file_path, ms.qbit_hash AS s_qbit_hash,
-                ms.downloaded_at AS s_downloaded_at, ms.seen_at AS s_seen_at
+                ms.downloaded_at AS s_downloaded_at, ms.seen_at AS s_seen_at,
+                COALESCE(ms.favorite, 0) AS s_favorite
          FROM torrents t
          LEFT JOIN movies m ON m.id = t.movie_id
          LEFT JOIN movie_state ms ON ms.movie_id = m.id
@@ -385,6 +409,7 @@ export class Dal {
         s_qbit_hash: string | null
         s_downloaded_at: number | null
         s_seen_at: number | null
+        s_favorite: number
       }>
 
     return rows
@@ -409,7 +434,8 @@ export class Dal {
           filePath: r.s_file_path,
           qbitHash: r.s_qbit_hash,
           downloadedAt: r.s_downloaded_at,
-          seenAt: r.s_seen_at
+          seenAt: r.s_seen_at,
+          favorite: r.s_favorite === 1
         }
       }))
   }

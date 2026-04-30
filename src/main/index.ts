@@ -94,6 +94,9 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
   ipcMain.handle(IpcChannels.setStatus, (_e, movieId: number, status: MovieStatus) => {
     d.setStatus(movieId, status, status === 'seen' ? { seenAt: Date.now() } : {})
   })
+  ipcMain.handle(IpcChannels.setFavorite, (_e, movieId: number, favorite: boolean) => {
+    d.setFavorite(movieId, favorite)
+  })
   ipcMain.handle(IpcChannels.testQbit, () => dl.testConnection())
   ipcMain.handle(IpcChannels.openPath, async (_e, path: string) => {
     if (!path || typeof path !== 'string') throw new Error('Empty path')

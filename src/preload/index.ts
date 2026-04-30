@@ -14,6 +14,7 @@ const api: AppApi = {
   download: (movieId) => ipcRenderer.invoke(IpcChannels.download, movieId),
   play: (movieId) => ipcRenderer.invoke(IpcChannels.play, movieId),
   setStatus: (movieId, status) => ipcRenderer.invoke(IpcChannels.setStatus, movieId, status),
+  setFavorite: (movieId, favorite) => ipcRenderer.invoke(IpcChannels.setFavorite, movieId, favorite),
   testQbit: () => ipcRenderer.invoke(IpcChannels.testQbit),
   openPath: (path) => ipcRenderer.invoke(IpcChannels.openPath, path),
   onTopUpdated: (cb) => {
