@@ -39,6 +39,11 @@ export function MovieCard({
     !!progress &&
     progress.progress >= STREAM_PLAY_THRESHOLD
 
+  const trailerUrl = (() => {
+    const q = `youtube ${movie.title}${movie.year ? ` ${movie.year}` : ''} trailer`
+    return `https://duckduckgo.com/?q=!ducky+${encodeURIComponent(q)}`
+  })()
+
   return (
     <article className="card">
       <div className="card-rank">#{rank}</div>
@@ -73,6 +78,14 @@ export function MovieCard({
         <div className="card-row">
           <StatusBadge status={state.status} />
           <div className="card-actions">
+            <button
+              className="btn-ghost"
+              title="Watch trailer on YouTube"
+              disabled={busy}
+              onClick={() => handleAction(() => window.api.openExternal(trailerUrl))}
+            >
+              ▶ Trailer
+            </button>
             {(state.status === 'unseen' || state.status === 'hidden') && (
               <button
                 className="btn-action"

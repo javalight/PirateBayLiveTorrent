@@ -15,6 +15,7 @@ export const IpcChannels = {
   listMovies: 'movies:list',
   testQbit: 'qbit:test',
   openPath: 'shell:open-path',
+  openExternal: 'shell:open-external',
   topUpdated: 'top:updated',
   downloadProgress: 'download:progress'
 } as const

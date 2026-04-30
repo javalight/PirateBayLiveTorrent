@@ -98,6 +98,12 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
     d.setFavorite(movieId, favorite)
   })
   ipcMain.handle(IpcChannels.testQbit, () => dl.testConnection())
+  ipcMain.handle(IpcChannels.openExternal, async (_e, url: string) => {
+    if (typeof url !== 'string' || !/^https?:/i.test(url)) {
+      throw new Error('openExternal only accepts http/https URLs')
+    }
+    await shell.openExternal(url)
+  })
   ipcMain.handle(IpcChannels.openPath, async (_e, path: string) => {
     if (!path || typeof path !== 'string') throw new Error('Empty path')
     const expanded = path.startsWith('~/') ? path.replace(/^~/, app.getPath('home')) : path

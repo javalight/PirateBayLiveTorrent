@@ -54,6 +54,7 @@ export interface AppApi {
   setFavorite: (movieId: number, favorite: boolean) => Promise<void>
   testQbit: () => Promise<{ ok: boolean; message: string }>
   openPath: (path: string) => Promise<void>
+  openExternal: (url: string) => Promise<void>
   onTopUpdated: (cb: (payload: TopUpdatedPayload) => void) => () => void
   onDownloadProgress: (cb: (payload: DownloadProgressPayload) => void) => () => void
 }
