@@ -75,6 +75,14 @@ export function App(): JSX.Element {
   return (
     <div className="app">
       <aside className="sidebar">
+        <div className="brand">
+          <span className="brand-skull" aria-hidden>☠</span>
+          <span className="brand-text">
+            The<span className="brand-text-accent">PirateBay</span>
+            <span className="brand-text-sub">Live Torrent</span>
+          </span>
+        </div>
+
         <div className="topic-switcher" ref={switcherRef}>
           <button
             className="topic-switcher-btn"
