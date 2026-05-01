@@ -2,21 +2,7 @@ import { useState } from 'react'
 import type { MovieListItem } from '@shared/api'
 import { useDownloadProgress } from '../hooks/useDownloads'
 import { MovieGrid } from '../components/MovieGrid'
-
-const CATEGORY_OPTIONS: Array<{ id: number | ''; label: string }> = [
-  { id: '', label: 'Any' },
-  { id: 200, label: 'Video — All' },
-  { id: 201, label: 'Movies' },
-  { id: 207, label: 'HD Movies' },
-  { id: 211, label: 'UHD Movies' },
-  { id: 205, label: 'TV shows' },
-  { id: 208, label: 'HD TV' },
-  { id: 100, label: 'Audio — All' },
-  { id: 101, label: 'Music' },
-  { id: 300, label: 'Applications' },
-  { id: 400, label: 'Games' },
-  { id: 600, label: 'Other (E-books / Comics / etc)' }
-]
+import { CATEGORY_GROUPS } from '../categories'
 
 export function SearchView(): JSX.Element {
   const [query, setQuery] = useState('')
@@ -67,10 +53,15 @@ export function SearchView(): JSX.Element {
           onChange={(e) => setQuery(e.target.value)}
         />
         <select value={category} onChange={(e) => setCategory(e.target.value === '' ? '' : Number(e.target.value))}>
-          {CATEGORY_OPTIONS.map((c) => (
-            <option key={c.id === '' ? 'any' : c.id} value={c.id}>
-              {c.label}
-            </option>
+          <option value="">Any category</option>
+          {CATEGORY_GROUPS.map((g) => (
+            <optgroup key={g.group} label={g.group}>
+              {g.cats.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label} (cat {c.id})
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
         <button type="submit" className="btn primary" disabled={loading || !query.trim()}>
