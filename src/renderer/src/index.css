@@ -331,6 +331,30 @@ button:disabled { opacity: 0.5; cursor: default; }
 }
 .search:focus { outline: none; border-color: var(--accent); }
 
+.search-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.search-form .search-input {
+  flex: 1;
+  background: #0a0b0e;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #fff;
+  font: inherit;
+}
+.search-form .search-input:focus { outline: none; border-color: var(--accent); }
+.search-form select {
+  background: #0a0b0e;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  color: #fff;
+  font: inherit;
+}
+
 /* List */
 .list {
   display: flex;

@@ -6,6 +6,7 @@ import { SettingsView } from './views/Settings'
 import { FilteredView } from './views/Filtered'
 import { MasterView } from './views/Master'
 import { NewTopic } from './views/NewTopic'
+import { SearchView } from './views/Search'
 
 type Tab = 'top100' | 'unseen' | 'favorites' | 'downloads' | 'seen' | 'hidden'
 
@@ -18,7 +19,11 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'hidden', label: 'Hidden' }
 ]
 
-type Route = { kind: 'master' } | { kind: 'topic'; topicId: number; tab: Tab } | { kind: 'settings' }
+type Route =
+  | { kind: 'master' }
+  | { kind: 'topic'; topicId: number; tab: Tab }
+  | { kind: 'search' }
+  | { kind: 'settings' }
 
 export function App(): JSX.Element {
   const [route, setRoute] = useState<Route>({ kind: 'master' })
@@ -55,6 +60,10 @@ export function App(): JSX.Element {
 
   const goMaster = (): void => setRoute({ kind: 'master' })
   const goSettings = (): void => setRoute({ kind: 'settings' })
+  const goSearch = (): void => {
+    setRoute({ kind: 'search' })
+    setTopicSwitcherOpen(false)
+  }
   const goTopic = (topicId: number, tab: Tab = 'unseen'): void => {
     setRoute({ kind: 'topic', topicId, tab })
     setTopicSwitcherOpen(false)
@@ -71,9 +80,18 @@ export function App(): JSX.Element {
             className="topic-switcher-btn"
             onClick={() => setTopicSwitcherOpen((v) => !v)}
           >
-            <span className="topic-switcher-icon">{currentTopic?.icon ?? '🏠'}</span>
+            <span className="topic-switcher-icon">
+              {currentTopic?.icon ??
+                (route.kind === 'search' ? '🔍' : route.kind === 'settings' ? '⚙' : '🏠')}
+            </span>
             <span className="topic-switcher-name">
-              {currentTopic ? currentTopic.name : 'All topics'}
+              {currentTopic
+                ? currentTopic.name
+                : route.kind === 'search'
+                  ? 'Search torrents'
+                  : route.kind === 'settings'
+                    ? 'Settings'
+                    : 'All topics'}
             </span>
             <span className="topic-switcher-chevron">▾</span>
           </button>
@@ -81,6 +99,9 @@ export function App(): JSX.Element {
             <div className="topic-menu">
               <button className="topic-menu-item" onClick={goMaster}>
                 <span>🏠</span> All topics
+              </button>
+              <button className="topic-menu-item" onClick={goSearch}>
+                <span>🔍</span> Search torrents
               </button>
               {topics.map((t) => (
                 <button
@@ -127,6 +148,7 @@ export function App(): JSX.Element {
             onEditTopic={(t) => setEditing({ kind: 'edit', topic: t })}
           />
         )}
+        {route.kind === 'search' && <SearchView />}
         {route.kind === 'settings' && <SettingsView />}
         {route.kind === 'topic' && currentTopic && (
           <TopicView topic={currentTopic} tab={route.tab} />

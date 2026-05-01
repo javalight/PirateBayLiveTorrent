@@ -7,6 +7,8 @@ import { IpcChannels } from '../shared/ipc.js'
 import { closeDb, getDb } from './db/client.js'
 import { Dal } from './db/dal.js'
 import { Poller } from './sources/poller.js'
+import { buildMagnet, searchTorrents as apibaySearch } from './sources/apibay.js'
+import { QbittorrentClient } from './torrents/qbittorrent.js'
 import { Enricher } from './enrichment/enricher.js'
 import { TmdbClient } from './enrichment/tmdb.js'
 import { getSettings, updateSettings, type UpdateSettingsInput } from './config.js'
@@ -104,6 +106,37 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
 
   ipcMain.handle(IpcChannels.download, async (_e, movieId: number) => dl.download(movieId))
   ipcMain.handle(IpcChannels.deleteFile, async (_e, movieId: number) => dl.deleteFile(movieId))
+
+  ipcMain.handle(IpcChannels.findTorrents, async (_e, query: string, category: number | null) => {
+    const items = await apibaySearch(query, category)
+    return items.map((it) => ({
+      infoHash: it.info_hash,
+      name: it.name,
+      category: it.category,
+      size: it.size,
+      seeders: it.seeders,
+      leechers: it.leechers,
+      added: it.added,
+      imdb: it.imdb && it.imdb.length > 0 ? it.imdb : null,
+      magnet: buildMagnet(it.info_hash, it.name)
+    }))
+  })
+
+  ipcMain.handle(
+    IpcChannels.downloadMagnet,
+    async (_e, arg: { infoHash: string; name: string; magnet: string }) => {
+      const settings = getSettings()
+      if (!settings.qbit.password) {
+        throw new Error('qBittorrent password not configured. Open Settings and add it.')
+      }
+      mkdirSync(settings.downloadDir, { recursive: true })
+      const qbit = new QbittorrentClient(settings.qbit.host, settings.qbit.username, settings.qbit.password)
+      await qbit.addMagnet(arg.magnet, settings.downloadDir, {
+        sequentialDownload: settings.streamWhileDownloading,
+        firstLastPiecePrio: settings.streamWhileDownloading
+      })
+    }
+  )
   ipcMain.handle(IpcChannels.play, async (_e, movieId: number) => {
     const row = getDb()
       .prepare('SELECT file_path FROM movie_state WHERE movie_id = ?')
