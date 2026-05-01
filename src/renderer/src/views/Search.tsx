@@ -1,6 +1,30 @@
 import { useState } from 'react'
 import type { FoundTorrent } from '@shared/api'
 
+/**
+ * Strip the noise off a torrent name to get a humane title we can search YouTube with.
+ * Mirrors what `parse-torrent-title` does, kept inline so the renderer doesn't pull in
+ * the whole package.
+ */
+function cleanTitle(name: string): string {
+  let s = name
+  // chop at the first 4-digit year (1900–2099)
+  const yearMatch = s.match(/[\s.\-_(\[](19|20)\d{2}/)
+  if (yearMatch && yearMatch.index != null) s = s.slice(0, yearMatch.index)
+  // strip TV episode marker like S04E08
+  s = s.replace(/[\s.\-_]+s\d{1,2}e\d{1,3}.*$/i, '')
+  // normalize separators and collapse
+  return s
+    .replace(/[._]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function trailerUrl(name: string): string {
+  const q = `youtube ${cleanTitle(name)} trailer`
+  return `https://duckduckgo.com/?q=!ducky+${encodeURIComponent(q)}`
+}
+
 const formatSize = (bytes: number): string => {
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
   let n = bytes
@@ -113,6 +137,13 @@ export function SearchView(): JSX.Element {
                 </div>
               </div>
               <div className="row-actions">
+                <button
+                  className="btn-ghost"
+                  title="Watch trailer on YouTube"
+                  onClick={() => void window.api.openExternal(trailerUrl(t.name))}
+                >
+                  ▶ Trailer
+                </button>
                 {downloaded.has(t.infoHash) ? (
                   <span className="badge badge-downloaded">Sent to qBit</span>
                 ) : (

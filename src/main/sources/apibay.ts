@@ -7,7 +7,7 @@ const ApibayItem = z.object({
   category: z.coerce.number(),
   name: z.string(),
   status: z.string(),
-  num_files: z.number(),
+  num_files: z.coerce.number(),
   size: z.coerce.number(),
   seeders: z.coerce.number(),
   leechers: z.coerce.number(),

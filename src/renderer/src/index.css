@@ -90,6 +90,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   gap: 8px;
 }
 .sidebar .tab-nav {
+  -webkit-app-region: no-drag;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -98,6 +99,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   border-top: 1px solid var(--border);
 }
 .sidebar-footer {
+  -webkit-app-region: no-drag;
   margin-top: auto;
   padding-top: 8px;
   border-top: 1px solid var(--border);
@@ -146,6 +148,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 }
 .topic-switcher-chevron { color: var(--text-dim); font-size: 10px; }
 .topic-menu {
+  -webkit-app-region: no-drag;
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
