@@ -28,18 +28,6 @@ export interface ListMoviesArg {
   sort?: 'rank' | 'seen_at' | 'downloaded_at' | 'title' | 'discovery' | 'activity'
 }
 
-export interface FoundTorrent {
-  infoHash: string
-  name: string
-  category: number
-  size: number
-  seeders: number
-  leechers: number
-  added: number
-  imdb: string | null
-  magnet: string
-}
-
 export interface CreateTopicArg {
   name: string
   icon?: string | null
@@ -86,8 +74,7 @@ export interface AppApi {
   updateSettings: (patch: UpdateSettingsArg) => Promise<AppSettings>
   download: (movieId: number) => Promise<void>
   deleteFile: (movieId: number) => Promise<void>
-  findTorrents: (query: string, category: number | null) => Promise<FoundTorrent[]>
-  downloadMagnet: (arg: { infoHash: string; name: string; magnet: string }) => Promise<void>
+  findTorrents: (query: string, category: number | null) => Promise<MovieListItem[]>
   play: (movieId: number) => Promise<void>
   setStatus: (movieId: number, status: MovieStatus) => Promise<void>
   setFavorite: (movieId: number, favorite: boolean) => Promise<void>

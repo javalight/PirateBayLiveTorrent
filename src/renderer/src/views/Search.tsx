@@ -1,40 +1,7 @@
 import { useState } from 'react'
-import type { FoundTorrent } from '@shared/api'
-
-/**
- * Strip the noise off a torrent name to get a humane title we can search YouTube with.
- * Mirrors what `parse-torrent-title` does, kept inline so the renderer doesn't pull in
- * the whole package.
- */
-function cleanTitle(name: string): string {
-  let s = name
-  // chop at the first 4-digit year (1900–2099)
-  const yearMatch = s.match(/[\s.\-_(\[](19|20)\d{2}/)
-  if (yearMatch && yearMatch.index != null) s = s.slice(0, yearMatch.index)
-  // strip TV episode marker like S04E08
-  s = s.replace(/[\s.\-_]+s\d{1,2}e\d{1,3}.*$/i, '')
-  // normalize separators and collapse
-  return s
-    .replace(/[._]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function trailerUrl(name: string): string {
-  const q = `youtube ${cleanTitle(name)} trailer`
-  return `https://duckduckgo.com/?q=!ducky+${encodeURIComponent(q)}`
-}
-
-const formatSize = (bytes: number): string => {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let n = bytes
-  let i = 0
-  while (n >= 1024 && i < units.length - 1) {
-    n /= 1024
-    i++
-  }
-  return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${units[i]}`
-}
+import type { MovieListItem } from '@shared/api'
+import { useDownloadProgress } from '../hooks/useDownloads'
+import { MovieGrid } from '../components/MovieGrid'
 
 const CATEGORY_OPTIONS: Array<{ id: number | ''; label: string }> = [
   { id: '', label: 'Any' },
@@ -54,10 +21,9 @@ const CATEGORY_OPTIONS: Array<{ id: number | ''; label: string }> = [
 export function SearchView(): JSX.Element {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<number | ''>('')
-  const [results, setResults] = useState<FoundTorrent[]>([])
+  const [results, setResults] = useState<MovieListItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [downloaded, setDownloaded] = useState<Set<string>>(new Set())
 
   const submit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
@@ -74,14 +40,17 @@ export function SearchView(): JSX.Element {
     }
   }
 
-  const download = async (t: FoundTorrent): Promise<void> => {
+  const refresh = async (): Promise<void> => {
+    if (!query.trim()) return
     try {
-      await window.api.downloadMagnet({ infoHash: t.infoHash, name: t.name, magnet: t.magnet })
-      setDownloaded((s) => new Set([...s, t.infoHash]))
+      const r = await window.api.findTorrents(query.trim(), category === '' ? null : Number(category))
+      setResults(r)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
     }
   }
+
+  const progress = useDownloadProgress(refresh)
 
   return (
     <section className="view">
@@ -111,49 +80,17 @@ export function SearchView(): JSX.Element {
 
       {error ? <div className="error">{error}</div> : null}
 
-      <p className="hint" style={{ marginTop: 16 }}>
-        {results.length > 0
-          ? `${results.length} results — sorted by qBittorrent. Downloads go to your default folder.`
-          : !loading && query
-            ? 'No results yet — hit Search.'
-            : ''}
-      </p>
+      {results.length === 0 && !loading && query ? (
+        <p className="hint">No results yet — hit Search.</p>
+      ) : null}
 
-      <div className="list">
-        {results.map((t) => (
-          <article key={t.infoHash} className="row">
-            <div className="row-main">
-              <div className="row-rank row-rank-empty">cat {t.category}</div>
-              <div className="row-title-block">
-                <h3 className="row-title" title={t.name}>{t.name}</h3>
-                <div className="row-secondary">
-                  <div className="row-meta">
-                    <span>{formatSize(t.size)}</span>
-                    <span>{t.seeders} seed</span>
-                    <span>{t.leechers} leech</span>
-                    {t.imdb ? <span>{t.imdb}</span> : null}
-                  </div>
-                  <div className="row-subtitle" title={t.name}>{t.name}</div>
-                </div>
-              </div>
-              <div className="row-actions">
-                <button
-                  className="btn-ghost"
-                  title="Watch trailer on YouTube"
-                  onClick={() => void window.api.openExternal(trailerUrl(t.name))}
-                >
-                  ▶ Trailer
-                </button>
-                {downloaded.has(t.infoHash) ? (
-                  <span className="badge badge-downloaded">Sent to qBit</span>
-                ) : (
-                  <button className="btn-action" onClick={() => void download(t)}>Download</button>
-                )}
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
+      {results.length > 0 ? (
+        <p className="hint" style={{ marginBottom: 16 }}>
+          {results.length} results — same buttons as everywhere else (Trailer, Download, ★, ✓, ⊘, …)
+        </p>
+      ) : null}
+
+      <MovieGrid items={results} progress={progress} onChanged={refresh} />
     </section>
   )
 }

@@ -17,7 +17,6 @@ export const IpcChannels = {
   download: 'movie:download',
   deleteFile: 'movie:delete-file',
   findTorrents: 'torrents:find',
-  downloadMagnet: 'torrents:download-magnet',
   play: 'movie:play',
   setStatus: 'movie:set-status',
   setFavorite: 'movie:set-favorite',

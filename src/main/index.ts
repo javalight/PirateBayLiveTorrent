@@ -8,7 +8,7 @@ import { closeDb, getDb } from './db/client.js'
 import { Dal } from './db/dal.js'
 import { Poller } from './sources/poller.js'
 import { buildMagnet, searchTorrents as apibaySearch } from './sources/apibay.js'
-import { QbittorrentClient } from './torrents/qbittorrent.js'
+import { parseTorrentTitle } from './enrichment/titleParser.js'
 import { Enricher } from './enrichment/enricher.js'
 import { TmdbClient } from './enrichment/tmdb.js'
 import { getSettings, updateSettings, type UpdateSettingsInput } from './config.js'
@@ -109,34 +109,54 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
 
   ipcMain.handle(IpcChannels.findTorrents, async (_e, query: string, category: number | null) => {
     const items = await apibaySearch(query, category)
-    return items.map((it) => ({
-      infoHash: it.info_hash,
-      name: it.name,
-      category: it.category,
-      size: it.size,
-      seeders: it.seeders,
-      leechers: it.leechers,
-      added: it.added,
-      imdb: it.imdb && it.imdb.length > 0 ? it.imdb : null,
-      magnet: buildMagnet(it.info_hash, it.name)
-    }))
-  })
+    const now = Date.now()
+    const results: Array<{
+      movie: ReturnType<Dal['movieById']>
+      state: ReturnType<Dal['ensureState']>
+      bestTorrent: ReturnType<Dal['torrentByHash']>
+      rank: null
+    }> = []
 
-  ipcMain.handle(
-    IpcChannels.downloadMagnet,
-    async (_e, arg: { infoHash: string; name: string; magnet: string }) => {
-      const settings = getSettings()
-      if (!settings.qbit.password) {
-        throw new Error('qBittorrent password not configured. Open Settings and add it.')
+    for (const it of items) {
+      d.upsertTorrent(
+        {
+          infoHash: it.info_hash,
+          name: it.name,
+          category: it.category,
+          sizeBytes: it.size,
+          seeders: it.seeders,
+          leechers: it.leechers,
+          magnet: buildMagnet(it.info_hash, it.name),
+          imdb: it.imdb && it.imdb.length > 0 ? it.imdb : null
+        },
+        now
+      )
+
+      let torrent = d.torrentByHash(it.info_hash)!
+      if (!torrent.movieId) {
+        const parsed = parseTorrentTitle(it.name)
+        const movieId = d.upsertMovieByTmdbId({
+          tmdbId: null,
+          title: parsed.cleanTitle,
+          year: parsed.year,
+          posterUrl: null,
+          plot: null,
+          rating: null,
+          runtimeMin: null,
+          genres: []
+        })
+        d.linkTorrentToMovie(it.info_hash, movieId)
+        d.ensureState(movieId)
+        torrent = d.torrentByHash(it.info_hash)!
       }
-      mkdirSync(settings.downloadDir, { recursive: true })
-      const qbit = new QbittorrentClient(settings.qbit.host, settings.qbit.username, settings.qbit.password)
-      await qbit.addMagnet(arg.magnet, settings.downloadDir, {
-        sequentialDownload: settings.streamWhileDownloading,
-        firstLastPiecePrio: settings.streamWhileDownloading
-      })
+
+      const movie = d.movieById(torrent.movieId!)
+      const state = d.ensureState(torrent.movieId!)
+      results.push({ movie, state, bestTorrent: torrent, rank: null })
     }
-  )
+
+    return results
+  })
   ipcMain.handle(IpcChannels.play, async (_e, movieId: number) => {
     const row = getDb()
       .prepare('SELECT file_path FROM movie_state WHERE movie_id = ?')

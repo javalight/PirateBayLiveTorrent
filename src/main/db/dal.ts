@@ -252,6 +252,13 @@ export class Dal {
     return !!this.db.prepare('SELECT 1 FROM torrents WHERE info_hash = ?').get(infoHash)
   }
 
+  torrentByHash(infoHash: string): Torrent | null {
+    const r = this.db.prepare('SELECT * FROM torrents WHERE info_hash = ?').get(infoHash) as
+      | TorrentRow
+      | undefined
+    return r ? torrentFromRow(r) : null
+  }
+
   upsertTorrent(input: UpsertTorrentInput, now: number): void {
     this.db
       .prepare(
