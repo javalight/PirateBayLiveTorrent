@@ -23,6 +23,7 @@ type Route =
   | { kind: 'master' }
   | { kind: 'topic'; topicId: number; tab: Tab }
   | { kind: 'search' }
+  | { kind: 'downloads' }
   | { kind: 'settings' }
 
 export function App(): JSX.Element {
@@ -64,6 +65,10 @@ export function App(): JSX.Element {
     setRoute({ kind: 'search' })
     setTopicSwitcherOpen(false)
   }
+  const goDownloads = (): void => {
+    setRoute({ kind: 'downloads' })
+    setTopicSwitcherOpen(false)
+  }
   const goTopic = (topicId: number, tab: Tab = 'unseen'): void => {
     setRoute({ kind: 'topic', topicId, tab })
     setTopicSwitcherOpen(false)
@@ -90,16 +95,24 @@ export function App(): JSX.Element {
           >
             <span className="topic-switcher-icon">
               {currentTopic?.icon ??
-                (route.kind === 'search' ? '🔍' : route.kind === 'settings' ? '⚙' : '🏠')}
+                (route.kind === 'search'
+                  ? '🔍'
+                  : route.kind === 'downloads'
+                    ? '⬇'
+                    : route.kind === 'settings'
+                      ? '⚙'
+                      : '🏠')}
             </span>
             <span className="topic-switcher-name">
               {currentTopic
                 ? currentTopic.name
                 : route.kind === 'search'
                   ? 'Search torrents'
-                  : route.kind === 'settings'
-                    ? 'Settings'
-                    : 'All topics'}
+                  : route.kind === 'downloads'
+                    ? 'All downloads'
+                    : route.kind === 'settings'
+                      ? 'Settings'
+                      : 'All topics'}
             </span>
             <span className="topic-switcher-chevron">▾</span>
           </button>
@@ -110,6 +123,9 @@ export function App(): JSX.Element {
               </button>
               <button className="topic-menu-item" onClick={goSearch}>
                 <span>🔍</span> Search torrents
+              </button>
+              <button className="topic-menu-item" onClick={goDownloads}>
+                <span>⬇</span> All downloads
               </button>
               {topics.map((t) => (
                 <button
@@ -157,6 +173,14 @@ export function App(): JSX.Element {
           />
         )}
         {route.kind === 'search' && <SearchView />}
+        {route.kind === 'downloads' && (
+          <FilteredView
+            title="All downloads"
+            emptyText="No downloads yet. Click Download on anything (Search, a topic, etc.) and it'll show up here."
+            query={{ downloadActivityOnly: true, sort: 'activity' }}
+            searchable
+          />
+        )}
         {route.kind === 'settings' && <SettingsView />}
         {route.kind === 'topic' && currentTopic && (
           <TopicView topic={currentTopic} tab={route.tab} />

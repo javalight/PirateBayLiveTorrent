@@ -19,7 +19,8 @@ export interface MovieListItem {
 }
 
 export interface ListMoviesArg {
-  topicId: number
+  /** Omit to query across all topics (and tracked-but-untopiced movies, e.g. from Search). */
+  topicId?: number
   statuses?: MovieStatus[]
   excludeStatuses?: MovieStatus[]
   inTopOnly?: boolean

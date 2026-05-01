@@ -448,7 +448,7 @@ export class Dal {
    * Used by the Unseen / Seen / Library views.
    */
   filterMovies(opts: {
-    topicId: number
+    topicId?: number
     statuses?: MovieStatus[]
     inTopOnly?: boolean
     excludeStatuses?: MovieStatus[]
@@ -456,22 +456,30 @@ export class Dal {
     downloadActivityOnly?: boolean
     sort?: 'rank' | 'seen_at' | 'downloaded_at' | 'title' | 'discovery' | 'activity'
   }): Array<{ movie: Movie; state: MovieState; bestTorrent: Torrent | null; rank: number | null }> {
-    const conds: string[] = [
-      `EXISTS (
-         SELECT 1 FROM topic_torrents tt
-         JOIN torrents t ON t.info_hash = tt.info_hash
-         WHERE tt.topic_id = ? AND t.movie_id = m.id
-       )`
-    ]
-    const params: unknown[] = [opts.topicId]
+    const conds: string[] = []
+    const params: unknown[] = []
 
-    if (opts.inTopOnly) {
-      conds.push(`EXISTS (
-        SELECT 1 FROM topic_torrents tt2
-        JOIN torrents t2 ON t2.info_hash = tt2.info_hash
-        WHERE tt2.topic_id = ? AND t2.movie_id = m.id AND tt2.rank IS NOT NULL
-      )`)
+    if (opts.topicId != null) {
+      conds.push(
+        `EXISTS (
+           SELECT 1 FROM topic_torrents tt
+           JOIN torrents t ON t.info_hash = tt.info_hash
+           WHERE tt.topic_id = ? AND t.movie_id = m.id
+         )`
+      )
       params.push(opts.topicId)
+
+      if (opts.inTopOnly) {
+        conds.push(`EXISTS (
+          SELECT 1 FROM topic_torrents tt2
+          JOIN torrents t2 ON t2.info_hash = tt2.info_hash
+          WHERE tt2.topic_id = ? AND t2.movie_id = m.id AND tt2.rank IS NOT NULL
+        )`)
+        params.push(opts.topicId)
+      }
+    } else {
+      // Global query — must have at least one torrent linked.
+      conds.push('EXISTS (SELECT 1 FROM torrents t WHERE t.movie_id = m.id)')
     }
 
     if (opts.statuses && opts.statuses.length > 0) {
@@ -491,32 +499,46 @@ export class Dal {
     }
 
     if (opts.downloadActivityOnly) {
-      conds.push(`(COALESCE(ms.status, 'unseen') = 'downloading' OR ms.downloaded_at IS NOT NULL)`)
+      // "Ever sent to qBit or ever completed" — robust to status flips
+      // (e.g. user clicks Stream during a download which flips status to 'seen').
+      conds.push(`(ms.qbit_hash IS NOT NULL OR ms.downloaded_at IS NOT NULL)`)
     }
 
     const where = conds.length > 0 ? `WHERE ${conds.join(' AND ')}` : ''
 
-    const rankSubquery = `(SELECT MIN(tt.rank) FROM topic_torrents tt
-      JOIN torrents t ON t.info_hash = tt.info_hash
-      WHERE tt.topic_id = ? AND t.movie_id = m.id)`
-    const recencySubquery = `(SELECT MAX(tt.last_seen_at) FROM topic_torrents tt
-      JOIN torrents t ON t.info_hash = tt.info_hash
-      WHERE tt.topic_id = ? AND t.movie_id = m.id)`
+    const topicId = opts.topicId
+    const rankSubquery =
+      topicId != null
+        ? `(SELECT MIN(tt.rank) FROM topic_torrents tt
+            JOIN torrents t ON t.info_hash = tt.info_hash
+            WHERE tt.topic_id = ? AND t.movie_id = m.id)`
+        : 'NULL'
+    const recencySubquery =
+      topicId != null
+        ? `(SELECT MAX(tt.last_seen_at) FROM topic_torrents tt
+            JOIN torrents t ON t.info_hash = tt.info_hash
+            WHERE tt.topic_id = ? AND t.movie_id = m.id)`
+        : '(SELECT MAX(t.last_seen_at) FROM torrents t WHERE t.movie_id = m.id)'
 
     let orderBy = 'm.title COLLATE NOCASE ASC'
     let orderParams: unknown[] = []
-    if (opts.sort === 'rank') {
+    if (opts.sort === 'rank' && topicId != null) {
       orderBy = `${rankSubquery} ASC NULLS LAST`
-      orderParams = [opts.topicId]
+      orderParams = [topicId]
     } else if (opts.sort === 'seen_at') orderBy = 'ms.seen_at DESC'
     else if (opts.sort === 'downloaded_at') orderBy = 'ms.downloaded_at DESC'
     else if (opts.sort === 'discovery') {
-      orderBy = `${rankSubquery} ASC NULLS LAST, ${recencySubquery} DESC`
-      orderParams = [opts.topicId, opts.topicId]
+      orderBy =
+        topicId != null
+          ? `${rankSubquery} ASC NULLS LAST, ${recencySubquery} DESC`
+          : `${recencySubquery} DESC`
+      orderParams = topicId != null ? [topicId, topicId] : []
     } else if (opts.sort === 'activity') {
-      // Currently downloading first, then by most-recent download.
-      orderBy = `CASE WHEN COALESCE(ms.status, 'unseen') = 'downloading' THEN 0 ELSE 1 END ASC,
-                 ms.downloaded_at DESC NULLS LAST`
+      // In-flight (qbit_hash present, not yet completed) sorts first;
+      // then by completion time, then by recency of any user action.
+      orderBy = `CASE WHEN ms.qbit_hash IS NOT NULL AND ms.downloaded_at IS NULL THEN 0 ELSE 1 END ASC,
+                 ms.downloaded_at DESC NULLS LAST,
+                 ms.seen_at DESC NULLS LAST`
     }
 
     const rows = this.db
@@ -534,7 +556,7 @@ export class Dal {
          ${where}
          ORDER BY ${orderBy}`
       )
-      .all(opts.topicId, ...params, ...orderParams) as Array<MovieRow & {
+      .all(...(topicId != null ? [topicId] : []), ...params, ...orderParams) as Array<MovieRow & {
         s_status: MovieStatus
         s_file_path: string | null
         s_qbit_hash: string | null
