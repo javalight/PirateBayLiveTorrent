@@ -75,6 +75,13 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
     void p.refreshOne(t.id)
     return t
   })
+  ipcMain.handle(IpcChannels.updateTopic, async (_e, topicId: number, patch: Parameters<Dal['updateTopic']>[1]) => {
+    const t = d.updateTopic(topicId, patch)
+    if (patch.sourceKind || patch.sourceParam || patch.sourceCategory !== undefined) {
+      void p.refreshOne(t.id)
+    }
+    return t
+  })
   ipcMain.handle(IpcChannels.archiveTopic, (_e, topicId: number) => d.archiveTopic(topicId))
   ipcMain.handle(IpcChannels.topicStats, () => {
     const topics = d.listTopics()

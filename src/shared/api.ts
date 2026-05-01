@@ -64,6 +64,7 @@ export interface AppApi {
   pollerStatus: () => Promise<PollerStatusPayload>
   listTopics: () => Promise<Topic[]>
   createTopic: (arg: CreateTopicArg) => Promise<Topic>
+  updateTopic: (topicId: number, patch: Partial<CreateTopicArg>) => Promise<Topic>
   archiveTopic: (topicId: number) => Promise<void>
   topicStats: () => Promise<TopicStats[]>
   topMovies: (topicId: number) => Promise<TopMovieCard[]>

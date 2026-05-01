@@ -7,6 +7,7 @@ export const IpcChannels = {
   pollerStatus: 'poller:status',
   listTopics: 'topics:list',
   createTopic: 'topics:create',
+  updateTopic: 'topics:update',
   archiveTopic: 'topics:archive',
   topicStats: 'topics:stats',
   topMovies: 'movies:top',

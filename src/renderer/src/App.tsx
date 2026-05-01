@@ -23,7 +23,7 @@ type Route = { kind: 'master' } | { kind: 'topic'; topicId: number; tab: Tab } |
 export function App(): JSX.Element {
   const [route, setRoute] = useState<Route>({ kind: 'master' })
   const [topics, setTopics] = useState<Topic[]>([])
-  const [creating, setCreating] = useState(false)
+  const [editing, setEditing] = useState<{ kind: 'new' } | { kind: 'edit'; topic: Topic } | null>(null)
   const [topicSwitcherOpen, setTopicSwitcherOpen] = useState(false)
   const switcherRef = useRef<HTMLDivElement | null>(null)
 
@@ -91,7 +91,7 @@ export function App(): JSX.Element {
                   <span>{t.icon ?? '📁'}</span> {t.name}
                 </button>
               ))}
-              <button className="topic-menu-item topic-menu-add" onClick={() => { setCreating(true); setTopicSwitcherOpen(false) }}>
+              <button className="topic-menu-item topic-menu-add" onClick={() => { setEditing({ kind: 'new' }); setTopicSwitcherOpen(false) }}>
                 + New topic
               </button>
             </div>
@@ -121,7 +121,11 @@ export function App(): JSX.Element {
 
       <main className="content">
         {route.kind === 'master' && (
-          <MasterView onPick={(id) => goTopic(id)} onAddTopic={() => setCreating(true)} />
+          <MasterView
+            onPick={(id) => goTopic(id)}
+            onAddTopic={() => setEditing({ kind: 'new' })}
+            onEditTopic={(t) => setEditing({ kind: 'edit', topic: t })}
+          />
         )}
         {route.kind === 'settings' && <SettingsView />}
         {route.kind === 'topic' && currentTopic && (
@@ -132,13 +136,22 @@ export function App(): JSX.Element {
         )}
       </main>
 
-      {creating && (
+      {editing && (
         <NewTopic
-          onClose={() => setCreating(false)}
-          onCreated={(id) => {
-            setCreating(false)
+          editing={editing.kind === 'edit' ? editing.topic : undefined}
+          onClose={() => setEditing(null)}
+          onSaved={(id) => {
+            const wasEdit = editing.kind === 'edit'
+            setEditing(null)
             reloadTopics()
-            goTopic(id)
+            if (!wasEdit) goTopic(id)
+          }}
+          onArchive={(id) => {
+            void window.api.archiveTopic(id).then(() => {
+              setEditing(null)
+              reloadTopics()
+              goMaster()
+            })
           }}
         />
       )}

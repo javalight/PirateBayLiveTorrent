@@ -190,6 +190,32 @@ button:disabled { opacity: 0.5; cursor: default; }
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 12px;
 }
+.topic-card-wrap {
+  position: relative;
+}
+.topic-edit {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-mid);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+.topic-card-wrap:hover .topic-edit { opacity: 1; }
+.topic-edit:hover { color: var(--accent); border-color: var(--accent); }
+.btn-danger-text { color: #ff8090; }
+.btn-danger-text:hover { background: rgba(255,128,144,0.1); }
 .topic-card {
   background: var(--bg-card);
   border: 1px solid var(--border);

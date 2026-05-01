@@ -9,6 +9,7 @@ const api: AppApi = {
   pollerStatus: () => ipcRenderer.invoke(IpcChannels.pollerStatus),
   listTopics: () => ipcRenderer.invoke(IpcChannels.listTopics),
   createTopic: (arg) => ipcRenderer.invoke(IpcChannels.createTopic, arg),
+  updateTopic: (topicId, patch) => ipcRenderer.invoke(IpcChannels.updateTopic, topicId, patch),
   archiveTopic: (topicId) => ipcRenderer.invoke(IpcChannels.archiveTopic, topicId),
   topicStats: () => ipcRenderer.invoke(IpcChannels.topicStats),
   topMovies: (topicId) => ipcRenderer.invoke(IpcChannels.topMovies, topicId),

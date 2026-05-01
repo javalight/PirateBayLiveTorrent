@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { TopicStats } from '@shared/types'
+import type { Topic, TopicStats } from '@shared/types'
 
 export function MasterView({
   onPick,
-  onAddTopic
+  onAddTopic,
+  onEditTopic
 }: {
   onPick: (topicId: number) => void
   onAddTopic: () => void
+  onEditTopic: (topic: Topic) => void
 }): JSX.Element {
   const [stats, setStats] = useState<TopicStats[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,21 +56,37 @@ export function MasterView({
 
       <div className="topic-grid">
         {stats.map((s) => (
-          <button key={s.topic.id} className="topic-card" onClick={() => onPick(s.topic.id)}>
-            <div className="topic-icon">{s.topic.icon ?? '📁'}</div>
-            <div className="topic-name">{s.topic.name}</div>
-            <div className="topic-source">
-              {s.topic.sourceKind === 'top100'
-                ? `Top 100 · cat ${s.topic.sourceParam}`
-                : `Search · "${s.topic.sourceParam}"`}
-            </div>
-            <div className="topic-stats">
-              <span><strong>{s.unseen}</strong> unseen</span>
-              <span><strong>{s.seen}</strong> seen</span>
-              <span><strong>{s.favorites}</strong> ★</span>
-              <span><strong>{s.inTopNow}</strong> ranked now</span>
-            </div>
-          </button>
+          <div key={s.topic.id} className="topic-card-wrap">
+            <button className="topic-card" onClick={() => onPick(s.topic.id)}>
+              <div className="topic-icon">{s.topic.icon ?? '📁'}</div>
+              <div className="topic-name">{s.topic.name}</div>
+              <div className="topic-source">
+                {s.topic.sourceKind === 'top100'
+                  ? `Top 100 · cat ${s.topic.sourceParam}`
+                  : `Search · "${s.topic.sourceParam}"`}
+              </div>
+              <div className="topic-stats">
+                <span><strong>{s.unseen}</strong> unseen</span>
+                <span><strong>{s.seen}</strong> seen</span>
+                <span><strong>{s.favorites}</strong> ★</span>
+                <span><strong>{s.inTopNow}</strong> ranked now</span>
+              </div>
+            </button>
+            <button
+              className="topic-edit"
+              title="Edit topic"
+              aria-label="Edit topic"
+              onClick={(e) => {
+                e.stopPropagation()
+                onEditTopic(s.topic)
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+              </svg>
+            </button>
+          </div>
         ))}
       </div>
     </section>

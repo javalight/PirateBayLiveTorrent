@@ -166,6 +166,30 @@ export class Dal {
     this.db.prepare('UPDATE topics SET archived_at = ? WHERE id = ?').run(Date.now(), id)
   }
 
+  updateTopic(id: number, patch: Partial<CreateTopicInput>): Topic {
+    const cur = this.topicById(id)
+    if (!cur) throw new Error(`Topic ${id} not found`)
+    this.db
+      .prepare(
+        `UPDATE topics SET
+           name = ?,
+           icon = ?,
+           source_kind = ?,
+           source_param = ?,
+           source_category = ?
+         WHERE id = ?`
+      )
+      .run(
+        patch.name ?? cur.name,
+        patch.icon !== undefined ? patch.icon : cur.icon,
+        patch.sourceKind ?? cur.sourceKind,
+        patch.sourceParam ?? cur.sourceParam,
+        patch.sourceCategory !== undefined ? patch.sourceCategory : cur.sourceCategory,
+        id
+      )
+    return this.topicById(id)!
+  }
+
   topicStats(topic: Topic): TopicStats {
     const total = (
       this.db.prepare('SELECT COUNT(DISTINCT t.movie_id) AS n FROM topic_torrents tt JOIN torrents t ON t.info_hash = tt.info_hash WHERE tt.topic_id = ? AND t.movie_id IS NOT NULL').get(topic.id) as { n: number }
