@@ -3,6 +3,7 @@ import type { Topic } from '@shared/types'
 import { useTopMovies } from '../hooks/useMovies'
 import { useDownloadProgress } from '../hooks/useDownloads'
 import { MovieCard } from '../components/MovieCard'
+import { DisplayModeToggle } from '../contexts/DisplayMode'
 
 export function Top100View({ topic }: { topic: Topic }): JSX.Element {
   const { movies, loading, error, refresh, pollNow } = useTopMovies(topic.id)
@@ -28,10 +29,13 @@ export function Top100View({ topic }: { topic: Topic }): JSX.Element {
           {topic.icon ? <span style={{ marginRight: 8 }}>{topic.icon}</span> : null}
           {topic.name} — {headerLabel}
         </h2>
-        <button className="btn refresh-btn" onClick={() => void handleRefresh()} disabled={busy}>
-          {busy ? <span className="spinner" /> : null}
-          {busy ? 'Refreshing…' : 'Refresh now'}
-        </button>
+        <div className="view-header-right">
+          <DisplayModeToggle />
+          <button className="btn refresh-btn" onClick={() => void handleRefresh()} disabled={busy}>
+            {busy ? <span className="spinner" /> : null}
+            {busy ? 'Refreshing…' : 'Refresh now'}
+          </button>
+        </div>
       </header>
 
       {error ? <div className="error">Error: {error}</div> : null}

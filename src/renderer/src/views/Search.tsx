@@ -3,6 +3,7 @@ import type { MovieListItem } from '@shared/api'
 import { useDownloadProgress } from '../hooks/useDownloads'
 import { MovieGrid } from '../components/MovieGrid'
 import { CATEGORY_GROUPS } from '../categories'
+import { DisplayModeToggle } from '../contexts/DisplayMode'
 
 export function SearchView(): JSX.Element {
   const [query, setQuery] = useState('')
@@ -42,6 +43,9 @@ export function SearchView(): JSX.Element {
     <section className="view">
       <header className="view-header">
         <h2>Search torrents</h2>
+        <div className="view-header-right">
+          <DisplayModeToggle />
+        </div>
       </header>
 
       <form className="search-form" onSubmit={submit}>

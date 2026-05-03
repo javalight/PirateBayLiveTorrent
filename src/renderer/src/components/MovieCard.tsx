@@ -3,6 +3,7 @@ import type { TopMovieCard } from '@shared/api'
 import type { DownloadProgressPayload } from '@shared/ipc'
 import { STREAM_PLAY_THRESHOLD } from '@shared/settings'
 import { StatusBadge } from './StatusBadge'
+import { useDisplayMode } from '../contexts/DisplayMode'
 
 const formatSize = (bytes: number): string => {
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -26,6 +27,9 @@ export function MovieCard({
 }): JSX.Element {
   const { movie, state, bestTorrent, rank } = card
   const rating = movie.rating != null ? movie.rating.toFixed(1) : null
+  const { mode } = useDisplayMode()
+  const primaryTitle = mode === 'release' ? bestTorrent.name : movie.title
+  const secondaryTitle = mode === 'release' ? movie.title : bestTorrent.name
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -61,11 +65,16 @@ export function MovieCard({
         {rank ? <div className="row-rank">#{rank}</div> : <div className="row-rank row-rank-empty">—</div>}
 
         <div className="row-title-block">
-          <h3 className="row-title" title={bestTorrent.name}>
-            {bestTorrent.name}
+          <h3
+            className={`row-title ${mode === 'release' ? 'row-title-release' : 'row-title-clean'}`}
+            title={bestTorrent.name}
+          >
+            {primaryTitle}
           </h3>
           <div className="row-meta">
-            {movie.title && movie.title !== bestTorrent.name ? <span className="row-meta-movie">{movie.title}</span> : null}
+            {secondaryTitle && secondaryTitle !== primaryTitle ? (
+              <span className="row-meta-movie" title={secondaryTitle}>{secondaryTitle}</span>
+            ) : null}
             {movie.year ? <span>{movie.year}</span> : null}
             {rating ? <span>★ {rating}</span> : null}
             {bestTorrent.sizeBytes ? <span>{formatSize(bestTorrent.sizeBytes)}</span> : null}
