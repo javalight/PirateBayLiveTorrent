@@ -61,19 +61,15 @@ export function MovieCard({
         {rank ? <div className="row-rank">#{rank}</div> : <div className="row-rank row-rank-empty">—</div>}
 
         <div className="row-title-block">
-          <h3 className="row-title" title={movie.title}>
-            {movie.title}
+          <h3 className="row-title" title={bestTorrent.name}>
+            {bestTorrent.name}
           </h3>
-          <div className="row-secondary">
-            <div className="row-meta">
-              {movie.year ? <span>{movie.year}</span> : null}
-              {rating ? <span>★ {rating}</span> : null}
-              {bestTorrent.sizeBytes ? <span>{formatSize(bestTorrent.sizeBytes)}</span> : null}
-              {bestTorrent.seeders ? <span>{bestTorrent.seeders} seed</span> : null}
-            </div>
-            <div className="row-subtitle" title={bestTorrent.name}>
-              {bestTorrent.name}
-            </div>
+          <div className="row-meta">
+            {movie.title && movie.title !== bestTorrent.name ? <span className="row-meta-movie">{movie.title}</span> : null}
+            {movie.year ? <span>{movie.year}</span> : null}
+            {rating ? <span>★ {rating}</span> : null}
+            {bestTorrent.sizeBytes ? <span>{formatSize(bestTorrent.sizeBytes)}</span> : null}
+            {bestTorrent.seeders ? <span>{bestTorrent.seeders} seed</span> : null}
           </div>
         </div>
 

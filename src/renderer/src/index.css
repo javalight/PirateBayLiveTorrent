@@ -468,41 +468,29 @@ button:disabled { opacity: 0.5; cursor: default; }
   min-width: 0;
 }
 .row-title {
-  margin: 0 0 2px;
-  font-size: 13px;
+  margin: 0 0 3px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--link);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .row:hover .row-title { color: var(--link-hover); }
-.row-secondary {
-  position: relative;
-  height: 16px;
-}
-.row-subtitle, .row-meta {
-  position: absolute;
-  inset: 0;
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: opacity 0.1s;
-}
-.row-subtitle {
-  color: var(--text-mid);
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  opacity: 0;
-  pointer-events: none;
-}
 .row-meta {
   display: flex;
   gap: 12px;
+  font-size: 11px;
   color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.row:hover .row-subtitle { opacity: 1; }
-.row:hover .row-meta { opacity: 0; }
+.row-meta-movie {
+  color: var(--text-mid);
+  font-weight: 600;
+}
 .row-actions {
   display: flex;
   gap: 4px;
