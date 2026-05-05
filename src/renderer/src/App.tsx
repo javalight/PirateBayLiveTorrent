@@ -170,6 +170,8 @@ export function App(): JSX.Element {
             onPick={(id) => goTopic(id)}
             onAddTopic={() => setEditing({ kind: 'new' })}
             onEditTopic={(t) => setEditing({ kind: 'edit', topic: t })}
+            onPickSearch={goSearch}
+            onPickDownloads={goDownloads}
           />
         )}
         {route.kind === 'search' && <SearchView />}

@@ -534,6 +534,18 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
   box-shadow: var(--shadow-lg);
   background: var(--postit);
 }
+/* Pinned shortcut cards (Search, All downloads) at the start of the grid. */
+.topic-card.topic-card-pinned {
+  background: var(--erased);
+  border-style: dashed;
+}
+.topic-card.topic-card-pinned::before {
+  background: var(--marker-red);
+  opacity: 0.55;
+}
+.topic-card.topic-card-pinned:hover {
+  background: #fff;
+}
 /* Tape strip on top of each topic card */
 .topic-card::before {
   content: '';

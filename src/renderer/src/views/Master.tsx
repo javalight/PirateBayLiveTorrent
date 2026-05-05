@@ -4,11 +4,15 @@ import type { Topic, TopicStats } from '@shared/types'
 export function MasterView({
   onPick,
   onAddTopic,
-  onEditTopic
+  onEditTopic,
+  onPickSearch,
+  onPickDownloads
 }: {
   onPick: (topicId: number) => void
   onAddTopic: () => void
   onEditTopic: (topic: Topic) => void
+  onPickSearch: () => void
+  onPickDownloads: () => void
 }): JSX.Element {
   const [stats, setStats] = useState<TopicStats[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,6 +59,22 @@ export function MasterView({
       ) : null}
 
       <div className="topic-grid">
+        <div className="topic-card-wrap">
+          <button className="topic-card topic-card-pinned" onClick={onPickSearch}>
+            <div className="topic-icon">🔍</div>
+            <div className="topic-name">Search torrents</div>
+            <div className="topic-source">Look up anything on apibay</div>
+          </button>
+        </div>
+
+        <div className="topic-card-wrap">
+          <button className="topic-card topic-card-pinned" onClick={onPickDownloads}>
+            <div className="topic-icon">⬇</div>
+            <div className="topic-name">All downloads</div>
+            <div className="topic-source">In-flight + completed across every topic</div>
+          </button>
+        </div>
+
         {stats.map((s) => (
           <div key={s.topic.id} className="topic-card-wrap">
             <button className="topic-card" onClick={() => onPick(s.topic.id)}>
