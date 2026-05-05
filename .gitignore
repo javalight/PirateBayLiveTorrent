@@ -1,6 +1,12 @@
 node_modules/
 out/
 dist/
+
+# Transmission binaries are produced by `npm run bundle:transmission`;
+# rebuild per packaging environment / arch instead of committing.
+resources/bin/transmission-daemon
+resources/bin/libs/
+
 .DS_Store
 *.log
 .env

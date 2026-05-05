@@ -13,7 +13,8 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
-    "package:mac": "npm run build && electron-builder --mac --config electron-builder.yml"
+    "bundle:transmission": "bash scripts/bundle-transmission.sh",
+    "package:mac": "npm run bundle:transmission && npm run build && electron-builder --mac --config electron-builder.yml"
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0",
