@@ -295,7 +295,32 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
 
 /* ── Main content & headers ──────────────────────────────────────────── */
 
-.content { overflow: auto; }
+.content { overflow: auto; position: relative; }
+
+.back-btn {
+  position: sticky;
+  top: 12px;
+  margin: 12px 0 -36px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 9px;
+  background: #fff;
+  border: 2px solid var(--pencil);
+  border-radius: var(--wobbly-pill);
+  font-family: 'Patrick Hand', sans-serif;
+  font-size: 14px;
+  color: var(--pencil);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  z-index: 5;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.back-btn:hover {
+  background: var(--postit);
+  transform: translate(-2px, 0);
+}
+.back-btn svg { display: block; }
 
 .view {
   padding: 28px 36px 56px;

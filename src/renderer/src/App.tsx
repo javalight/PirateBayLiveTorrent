@@ -26,12 +26,55 @@ type Route =
   | { kind: 'downloads' }
   | { kind: 'settings' }
 
+const sameRoute = (a: Route, b: Route): boolean => {
+  if (a.kind !== b.kind) return false
+  if (a.kind === 'topic' && b.kind === 'topic') {
+    return a.topicId === b.topicId && a.tab === b.tab
+  }
+  return true
+}
+
+interface NavState {
+  route: Route
+  history: Route[]
+}
+
 export function App(): JSX.Element {
-  const [route, setRoute] = useState<Route>({ kind: 'master' })
+  const [nav, setNav] = useState<NavState>({ route: { kind: 'master' }, history: [] })
+  const { route, history } = nav
   const [topics, setTopics] = useState<Topic[]>([])
   const [editing, setEditing] = useState<{ kind: 'new' } | { kind: 'edit'; topic: Topic } | null>(null)
   const [topicSwitcherOpen, setTopicSwitcherOpen] = useState(false)
   const switcherRef = useRef<HTMLDivElement | null>(null)
+
+  // Single state object so route + history update atomically — avoids the
+  // StrictMode double-invocation hazard of calling setHistory inside a
+  // setRoute updater.
+  const navigate = useCallback((next: Route): void => {
+    setNav((cur) => {
+      if (sameRoute(cur.route, next)) return cur
+      return { route: next, history: [cur.route, ...cur.history].slice(0, 50) }
+    })
+  }, [])
+
+  const goBack = useCallback((): void => {
+    setNav((cur) => {
+      if (cur.history.length === 0) return cur
+      return { route: cur.history[0]!, history: cur.history.slice(1) }
+    })
+  }, [])
+
+  // Cmd-[ / Cmd-Left = back, just like Safari / Finder.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === '[' || e.key === 'ArrowLeft')) {
+        e.preventDefault()
+        goBack()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [goBack])
 
   useEffect(() => {
     if (!topicSwitcherOpen) return
@@ -59,18 +102,18 @@ export function App(): JSX.Element {
     reloadTopics()
   }, [reloadTopics])
 
-  const goMaster = (): void => setRoute({ kind: 'master' })
-  const goSettings = (): void => setRoute({ kind: 'settings' })
+  const goMaster = (): void => navigate({ kind: 'master' })
+  const goSettings = (): void => navigate({ kind: 'settings' })
   const goSearch = (): void => {
-    setRoute({ kind: 'search' })
+    navigate({ kind: 'search' })
     setTopicSwitcherOpen(false)
   }
   const goDownloads = (): void => {
-    setRoute({ kind: 'downloads' })
+    navigate({ kind: 'downloads' })
     setTopicSwitcherOpen(false)
   }
   const goTopic = (topicId: number, tab: Tab = 'unseen'): void => {
-    setRoute({ kind: 'topic', topicId, tab })
+    navigate({ kind: 'topic', topicId, tab })
     setTopicSwitcherOpen(false)
   }
 
@@ -149,7 +192,7 @@ export function App(): JSX.Element {
               <button
                 key={t.id}
                 className={`nav-item ${route.tab === t.id ? 'active' : ''}`}
-                onClick={() => setRoute({ kind: 'topic', topicId: route.topicId, tab: t.id })}
+                onClick={() => navigate({ kind: 'topic', topicId: route.topicId, tab: t.id })}
               >
                 {t.label}
               </button>
@@ -165,6 +208,19 @@ export function App(): JSX.Element {
       </aside>
 
       <main className="content">
+        {history.length > 0 && (
+          <button
+            className="back-btn"
+            onClick={goBack}
+            title="Back (⌘[)"
+            aria-label="Back"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            <span>Back</span>
+          </button>
+        )}
         {route.kind === 'master' && (
           <MasterView
             onPick={(id) => goTopic(id)}
