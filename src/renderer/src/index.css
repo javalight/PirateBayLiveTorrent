@@ -412,9 +412,14 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
   flex-shrink: 0;
 }
 .row-progress {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.row-progress-bar {
   position: relative;
-  height: 8px;
-  margin-top: 10px;
+  height: 14px;
   background: var(--erased);
   border: 2px solid var(--pencil);
   border-radius: var(--wobbly-pill);
@@ -433,11 +438,10 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
   transition: width 0.3s;
 }
 .row-progress .progress-label {
-  position: absolute;
-  top: -18px;
-  right: 4px;
-  font-size: 11px;
-  color: var(--pencil-soft);
+  font-size: 13px;
+  color: var(--pencil);
+  font-family: 'Patrick Hand', sans-serif;
+  letter-spacing: 0.2px;
 }
 .row-error {
   margin-top: 8px;

@@ -5,9 +5,6 @@ export function SettingsView(): JSX.Element {
   const [s, setS] = useState<AppSettings | null>(null)
   const [draft, setDraft] = useState<{
     tmdbApiKey: string
-    qbitHost: string
-    qbitUsername: string
-    qbitPassword: string
     downloadDir: string
     pollIntervalMin: number
     autoMarkSeenOnDownload: boolean
@@ -22,9 +19,6 @@ export function SettingsView(): JSX.Element {
       setS(v)
       setDraft({
         tmdbApiKey: v.tmdb.apiKey ?? '',
-        qbitHost: v.qbit.host,
-        qbitUsername: v.qbit.username,
-        qbitPassword: v.qbit.password ?? '',
         downloadDir: v.downloadDir,
         pollIntervalMin: v.pollIntervalMin,
         autoMarkSeenOnDownload: v.autoMarkSeenOnDownload,
@@ -41,9 +35,6 @@ export function SettingsView(): JSX.Element {
     try {
       const next = await window.api.updateSettings({
         tmdbApiKey: draft.tmdbApiKey || null,
-        qbitHost: draft.qbitHost,
-        qbitUsername: draft.qbitUsername,
-        qbitPassword: draft.qbitPassword || null,
         downloadDir: draft.downloadDir,
         pollIntervalMin: draft.pollIntervalMin,
         autoMarkSeenOnDownload: draft.autoMarkSeenOnDownload,
@@ -74,33 +65,6 @@ export function SettingsView(): JSX.Element {
               value={draft.tmdbApiKey}
               onChange={(e) => setDraft({ ...draft, tmdbApiKey: e.target.value })}
               placeholder="Get one at themoviedb.org/settings/api"
-            />
-          </label>
-        </fieldset>
-
-        <fieldset>
-          <legend>qBittorrent</legend>
-          <label>
-            <span>Host</span>
-            <input
-              value={draft.qbitHost}
-              onChange={(e) => setDraft({ ...draft, qbitHost: e.target.value })}
-              placeholder="http://localhost:8080"
-            />
-          </label>
-          <label>
-            <span>Username</span>
-            <input
-              value={draft.qbitUsername}
-              onChange={(e) => setDraft({ ...draft, qbitUsername: e.target.value })}
-            />
-          </label>
-          <label>
-            <span>Password</span>
-            <input
-              type="password"
-              value={draft.qbitPassword}
-              onChange={(e) => setDraft({ ...draft, qbitPassword: e.target.value })}
             />
           </label>
         </fieldset>
@@ -158,7 +122,7 @@ export function SettingsView(): JSX.Element {
               checked={draft.streamWhileDownloading}
               onChange={(e) => setDraft({ ...draft, streamWhileDownloading: e.target.checked })}
             />
-            <span>Stream while downloading (sequential mode — Play button appears at 5%)</span>
+            <span>Stream while downloading (prioritize the largest file — Play button appears at 5%)</span>
           </label>
         </fieldset>
 

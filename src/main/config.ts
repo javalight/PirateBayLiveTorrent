@@ -5,7 +5,6 @@ import { SETTINGS_DEFAULTS, type AppSettings } from '../shared/settings.js'
 
 interface PersistedSecrets {
   tmdbApiKeyEnc: string | null
-  qbitPasswordEnc: string | null
 }
 
 interface PersistedShape {
@@ -14,8 +13,6 @@ interface PersistedShape {
   downloadDir: string
   autoMarkSeenOnDownload: boolean
   streamWhileDownloading: boolean
-  qbitHost: string
-  qbitUsername: string
   secrets: PersistedSecrets
 }
 
@@ -29,9 +26,7 @@ const defaults = (): PersistedShape => ({
   downloadDir: join(app.getPath('videos'), 'PBL'),
   autoMarkSeenOnDownload: SETTINGS_DEFAULTS.autoMarkSeenOnDownload,
   streamWhileDownloading: SETTINGS_DEFAULTS.streamWhileDownloading,
-  qbitHost: SETTINGS_DEFAULTS.qbit.host,
-  qbitUsername: SETTINGS_DEFAULTS.qbit.username,
-  secrets: { tmdbApiKeyEnc: null, qbitPasswordEnc: null }
+  secrets: { tmdbApiKeyEnc: null }
 })
 
 const load = (): PersistedShape => {
@@ -39,7 +34,13 @@ const load = (): PersistedShape => {
   const path = settingsPath()
   try {
     const raw = readFileSync(path, 'utf8')
-    cache = { ...defaults(), ...(JSON.parse(raw) as Partial<PersistedShape>) } as PersistedShape
+    const parsed = JSON.parse(raw) as Partial<PersistedShape> & {
+      // Tolerate legacy keys from pre-WebTorrent settings files; they're ignored.
+      qbitHost?: unknown
+      qbitUsername?: unknown
+    }
+    cache = { ...defaults(), ...parsed } as PersistedShape
+    cache.secrets = { tmdbApiKeyEnc: parsed.secrets?.tmdbApiKeyEnc ?? null }
   } catch {
     cache = defaults()
     persist(cache)
@@ -74,12 +75,7 @@ export function getSettings(): AppSettings {
     downloadDir: s.downloadDir,
     autoMarkSeenOnDownload: s.autoMarkSeenOnDownload,
     streamWhileDownloading: s.streamWhileDownloading,
-    tmdb: { apiKey: decrypt(s.secrets.tmdbApiKeyEnc) },
-    qbit: {
-      host: s.qbitHost,
-      username: s.qbitUsername,
-      password: decrypt(s.secrets.qbitPasswordEnc)
-    }
+    tmdb: { apiKey: decrypt(s.secrets.tmdbApiKeyEnc) }
   }
 }
 
@@ -90,9 +86,6 @@ export interface UpdateSettingsInput {
   autoMarkSeenOnDownload?: boolean
   streamWhileDownloading?: boolean
   tmdbApiKey?: string | null
-  qbitHost?: string
-  qbitUsername?: string
-  qbitPassword?: string | null
 }
 
 export function updateSettings(patch: UpdateSettingsInput): AppSettings {
@@ -102,17 +95,10 @@ export function updateSettings(patch: UpdateSettingsInput): AppSettings {
   if (patch.downloadDir) s.downloadDir = patch.downloadDir
   if (patch.autoMarkSeenOnDownload != null) s.autoMarkSeenOnDownload = patch.autoMarkSeenOnDownload
   if (patch.streamWhileDownloading != null) s.streamWhileDownloading = patch.streamWhileDownloading
-  if (patch.qbitHost) s.qbitHost = patch.qbitHost
-  if (patch.qbitUsername) s.qbitUsername = patch.qbitUsername
 
-  if ('tmdbApiKey' in patch || 'qbitPassword' in patch) {
+  if ('tmdbApiKey' in patch) {
     s.secrets = { ...s.secrets }
-    if ('tmdbApiKey' in patch) {
-      s.secrets.tmdbApiKeyEnc = patch.tmdbApiKey ? encrypt(patch.tmdbApiKey) : null
-    }
-    if ('qbitPassword' in patch) {
-      s.secrets.qbitPasswordEnc = patch.qbitPassword ? encrypt(patch.qbitPassword) : null
-    }
+    s.secrets.tmdbApiKeyEnc = patch.tmdbApiKey ? encrypt(patch.tmdbApiKey) : null
   }
 
   cache = s

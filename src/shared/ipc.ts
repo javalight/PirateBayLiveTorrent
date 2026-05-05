@@ -15,13 +15,13 @@ export const IpcChannels = {
   getSettings: 'settings:get',
   updateSettings: 'settings:update',
   download: 'movie:download',
+  restartDownload: 'movie:restart-download',
   deleteFile: 'movie:delete-file',
   findTorrents: 'torrents:find',
   play: 'movie:play',
   setStatus: 'movie:set-status',
   setFavorite: 'movie:set-favorite',
   listMovies: 'movies:list',
-  testQbit: 'qbit:test',
   openPath: 'shell:open-path',
   openExternal: 'shell:open-external',
   revealItem: 'shell:reveal-item',
@@ -50,5 +50,7 @@ export interface DownloadProgressPayload {
   state: string
   progress: number
   dlSpeed: number
+  upSpeed: number
+  peers: number
   done: boolean
 }

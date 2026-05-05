@@ -105,6 +105,7 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
   })
 
   ipcMain.handle(IpcChannels.download, async (_e, movieId: number) => dl.download(movieId))
+  ipcMain.handle(IpcChannels.restartDownload, async (_e, movieId: number) => dl.restart(movieId))
   ipcMain.handle(IpcChannels.deleteFile, async (_e, movieId: number) => dl.deleteFile(movieId))
 
   ipcMain.handle(IpcChannels.findTorrents, async (_e, query: string, category: number | null) => {
@@ -171,7 +172,6 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
   ipcMain.handle(IpcChannels.setFavorite, (_e, movieId: number, favorite: boolean) => {
     d.setFavorite(movieId, favorite)
   })
-  ipcMain.handle(IpcChannels.testQbit, () => dl.testConnection())
   ipcMain.handle(IpcChannels.revealItem, async (_e, movieId: number) => {
     const row = getDb()
       .prepare('SELECT file_path FROM movie_state WHERE movie_id = ?')
@@ -241,14 +241,34 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
-  poller?.stop()
-  downloads?.stop()
-  closeDb()
   if (process.platform !== 'darwin') app.quit()
 })
 
-app.on('before-quit', () => {
-  poller?.stop()
-  downloads?.stop()
-  closeDb()
+let shuttingDown = false
+app.on('before-quit', (event) => {
+  if (shuttingDown) return
+  shuttingDown = true
+  // Block Electron from exiting until the transmission daemon has flushed
+  // its `.resume` files; otherwise downloads restart from 0% next launch.
+  event.preventDefault()
+  ;(async () => {
+    try {
+      poller?.stop()
+      await downloads?.stopAndWait()
+      closeDb()
+    } catch (err) {
+      console.error('[shutdown] error during graceful stop:', err)
+    } finally {
+      app.exit(0)
+    }
+  })()
 })
+
+// Catch terminal-driven kills (Ctrl-C from `npm run dev`, SIGTERM from a
+// supervisor) so the daemon still gets a chance to flush.
+const gracefulSignal = (sig: NodeJS.Signals): void => {
+  console.log(`[shutdown] received ${sig}, flushing daemon…`)
+  app.quit()
+}
+process.on('SIGINT', () => gracefulSignal('SIGINT'))
+process.on('SIGTERM', () => gracefulSignal('SIGTERM'))

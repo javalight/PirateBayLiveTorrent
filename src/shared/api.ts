@@ -53,9 +53,6 @@ export interface UpdateSettingsArg {
   autoMarkSeenOnDownload?: boolean
   streamWhileDownloading?: boolean
   tmdbApiKey?: string | null
-  qbitHost?: string
-  qbitUsername?: string
-  qbitPassword?: string | null
 }
 
 export interface AppApi {
@@ -74,12 +71,12 @@ export interface AppApi {
   getSettings: () => Promise<AppSettings>
   updateSettings: (patch: UpdateSettingsArg) => Promise<AppSettings>
   download: (movieId: number) => Promise<void>
+  restartDownload: (movieId: number) => Promise<void>
   deleteFile: (movieId: number) => Promise<void>
   findTorrents: (query: string, category: number | null) => Promise<MovieListItem[]>
   play: (movieId: number) => Promise<void>
   setStatus: (movieId: number, status: MovieStatus) => Promise<void>
   setFavorite: (movieId: number, favorite: boolean) => Promise<void>
-  testQbit: () => Promise<{ ok: boolean; message: string }>
   openPath: (path: string) => Promise<void>
   openExternal: (url: string) => Promise<void>
   revealItem: (movieId: number) => Promise<void>

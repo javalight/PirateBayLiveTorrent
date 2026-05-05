@@ -2,7 +2,8 @@ import { BrowserWindow } from 'electron'
 import { mkdirSync, rmSync, statSync } from 'node:fs'
 import { Dal } from '../db/dal.js'
 import { getSettings } from '../config.js'
-import { isComplete, QbitError, QbittorrentClient } from './qbittorrent.js'
+import { buildMagnet } from '../sources/apibay.js'
+import { isComplete, torrentEngine } from './engine.js'
 import type { Torrent } from '../../shared/types.js'
 
 export interface DownloadProgress {
@@ -11,10 +12,12 @@ export interface DownloadProgress {
   state: string
   progress: number
   dlSpeed: number
+  upSpeed: number
+  peers: number
   done: boolean
 }
 
-const POLL_INTERVAL_MS = 4_000
+const POLL_INTERVAL_MS = 2_000
 
 export class DownloadManager {
   private timer: NodeJS.Timeout | null = null
@@ -24,35 +27,44 @@ export class DownloadManager {
 
   start(): void {
     if (this.timer) return
-    for (const h of this.dal.activeDownloadHashes()) this.active.add(h)
+    void torrentEngine
+      .start()
+      .then(() => this.resumeActive())
+      .catch((err) => {
+        console.error('[downloads] engine failed to start:', err)
+      })
     this.timer = setInterval(() => void this.tick(), POLL_INTERVAL_MS)
   }
 
   stop(): void {
     if (this.timer) clearInterval(this.timer)
     this.timer = null
+    void torrentEngine.destroy()
   }
 
-  /** Submit the best torrent for a movie to qBittorrent. */
+  /** Async variant — awaits the daemon's graceful shutdown so its `.resume`
+   *  files are flushed before the process exits. Use from `before-quit`. */
+  async stopAndWait(): Promise<void> {
+    if (this.timer) clearInterval(this.timer)
+    this.timer = null
+    await torrentEngine.destroy()
+  }
+
+  /** Begin downloading the best torrent for a movie. */
   async download(movieId: number): Promise<void> {
     const torrents = this.dal.torrentsForMovie(movieId)
     const best = pickBest(torrents)
     if (!best) throw new Error(`No torrent linked to movie ${movieId}`)
 
     const settings = getSettings()
-    if (!settings.qbit.password) {
-      throw new Error('qBittorrent password not configured. Open Settings and add it.')
-    }
-
     mkdirSync(settings.downloadDir, { recursive: true })
 
-    const qbit = new QbittorrentClient(settings.qbit.host, settings.qbit.username, settings.qbit.password)
-    await qbit.addMagnet(best.magnet, settings.downloadDir, {
-      sequentialDownload: settings.streamWhileDownloading,
-      firstLastPiecePrio: settings.streamWhileDownloading
+    const lowerHash = best.infoHash.toLowerCase()
+    const magnet = buildMagnet(best.infoHash, best.name)
+    await torrentEngine.addMagnet(magnet, lowerHash, settings.downloadDir, {
+      streamPriority: settings.streamWhileDownloading
     })
 
-    const lowerHash = best.infoHash.toLowerCase()
     this.dal.setStatus(movieId, 'downloading', { qbitHash: lowerHash })
     this.active.add(lowerHash)
     this.broadcast({
@@ -61,6 +73,44 @@ export class DownloadManager {
       state: 'metaDL',
       progress: 0,
       dlSpeed: 0,
+      upSpeed: 0,
+      peers: 0,
+      done: false
+    })
+  }
+
+  /**
+   * Re-announce an in-progress torrent so it discovers peers freshly. If the
+   * torrent isn't in the engine yet (e.g. app was restarted and resumeActive
+   * hasn't run), fall back to adding it. Avoids destroy/re-add which races
+   * with in-flight UDP responses and surfaces as `getsockname EBADF`.
+   */
+  async restart(movieId: number): Promise<void> {
+    const torrents = this.dal.torrentsForMovie(movieId)
+    const best = pickBest(torrents)
+    if (!best) throw new Error(`No torrent linked to movie ${movieId}`)
+
+    const settings = getSettings()
+    const lowerHash = best.infoHash.toLowerCase()
+
+    const reannounced = await torrentEngine.reannounce(lowerHash)
+    if (!reannounced) {
+      mkdirSync(settings.downloadDir, { recursive: true })
+      const magnet = buildMagnet(best.infoHash, best.name)
+      await torrentEngine.addMagnet(magnet, lowerHash, settings.downloadDir, {
+        streamPriority: settings.streamWhileDownloading
+      })
+    }
+
+    this.active.add(lowerHash)
+    this.broadcast({
+      movieId,
+      qbitHash: lowerHash,
+      state: 'metaDL',
+      progress: 0,
+      dlSpeed: 0,
+      upSpeed: 0,
+      peers: 0,
       done: false
     })
   }
@@ -75,26 +125,23 @@ export class DownloadManager {
     if (!row?.file_path && !row?.qbit_hash) {
       throw new Error('Nothing to delete — no file recorded for this movie')
     }
-    const settings = getSettings()
 
-    let qbitDeleted = false
-    if (row.qbit_hash && settings.qbit.password) {
+    let engineDeleted = false
+    if (row.qbit_hash) {
       try {
-        const qbit = new QbittorrentClient(settings.qbit.host, settings.qbit.username, settings.qbit.password)
-        await qbit.deleteTorrent(row.qbit_hash, true)
-        qbitDeleted = true
+        await torrentEngine.remove(row.qbit_hash, true)
+        engineDeleted = true
       } catch (err) {
-        console.warn('[downloads] qBit delete failed, falling back to fs:', err)
+        console.warn('[downloads] engine delete failed, falling back to fs:', err)
       }
     }
 
-    if (!qbitDeleted && row.file_path) {
+    if (!engineDeleted && row.file_path) {
       try {
         const stat = statSync(row.file_path)
         rmSync(row.file_path, { recursive: stat.isDirectory(), force: true })
       } catch (err) {
         console.warn('[downloads] fs delete failed:', err)
-        // Continue — we still want to clear the DB reference even if file was already gone.
       }
     }
 
@@ -108,30 +155,40 @@ export class DownloadManager {
       .get(movieId) as { file_path: string | null; qbit_hash: string | null } | undefined
   }
 
-  async testConnection(): Promise<{ ok: boolean; message: string }> {
+  /** On startup, re-add any torrents that were 'downloading' when the app last quit. */
+  private async resumeActive(): Promise<void> {
+    const hashes = this.dal.activeDownloadHashes()
+    if (hashes.length === 0) return
     const settings = getSettings()
-    if (!settings.qbit.password) return { ok: false, message: 'No password configured' }
-    const qbit = new QbittorrentClient(settings.qbit.host, settings.qbit.username, settings.qbit.password)
-    try {
-      await qbit.test()
-      return { ok: true, message: 'Connected' }
-    } catch (err) {
-      return { ok: false, message: err instanceof Error ? err.message : String(err) }
+    mkdirSync(settings.downloadDir, { recursive: true })
+
+    for (const hash of hashes) {
+      const movieId = this.dal.movieIdByQbitHash(hash)
+      if (movieId == null) continue
+      const torrents = this.dal.torrentsForMovie(movieId)
+      const best = pickBest(torrents)
+      if (!best) continue
+      try {
+        const magnet = buildMagnet(best.infoHash, best.name)
+        await torrentEngine.addMagnet(magnet, hash, settings.downloadDir, {
+          streamPriority: settings.streamWhileDownloading
+        })
+        this.active.add(hash)
+      } catch (err) {
+        console.warn(`[downloads] could not resume ${hash}:`, err)
+      }
     }
   }
 
   private async tick(): Promise<void> {
     if (this.active.size === 0) return
-    const settings = getSettings()
-    if (!settings.qbit.password) return
 
-    const qbit = new QbittorrentClient(settings.qbit.host, settings.qbit.username, settings.qbit.password)
+    const settings = getSettings()
     let infos
     try {
-      infos = await qbit.info([...this.active])
+      infos = await torrentEngine.info([...this.active])
     } catch (err) {
-      if (err instanceof QbitError) console.warn('[downloads]', err.message)
-      else console.error('[downloads] tick failed:', err)
+      console.error('[downloads] tick failed:', err)
       return
     }
 
@@ -139,6 +196,10 @@ export class DownloadManager {
       const hash = info.hash.toLowerCase()
       const movieId = this.dal.movieIdByQbitHash(hash)
       if (movieId == null) continue
+
+      console.log(
+        `[downloads] ${hash.substring(0, 8)} state=${info.state} progress=${(info.progress * 100).toFixed(1)}% peers=${info.peers} ↓${info.dlspeed}B/s`
+      )
 
       const done = isComplete(info)
       const livePath = info.content_path || info.save_path
@@ -150,6 +211,8 @@ export class DownloadManager {
         state: info.state,
         progress: info.progress,
         dlSpeed: info.dlspeed,
+        upSpeed: info.upspeed,
+        peers: info.peers,
         done
       })
 

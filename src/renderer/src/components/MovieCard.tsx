@@ -16,6 +16,16 @@ const formatSize = (bytes: number): string => {
   return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${units[i]}`
 }
 
+const formatSpeed = (bytesPerSec: number): string =>
+  bytesPerSec > 0 ? `${formatSize(bytesPerSec)}/s` : '0 B/s'
+
+const STATE_LABELS: Record<string, string> = {
+  metaDL: 'Looking for peers…',
+  downloading: 'Downloading',
+  uploading: 'Seeding',
+  paused: 'Paused'
+}
+
 export function MovieCard({
   card,
   progress,
@@ -101,6 +111,21 @@ export function MovieCard({
               onClick={() => handleAction(() => window.api.download(movie.id))}
             >
               Download
+            </button>
+          )}
+
+          {state.status === 'downloading' && (
+            <button
+              className="btn-ghost icon-only"
+              title="Restart — re-announce to trackers and re-find peers"
+              aria-label="Restart download"
+              disabled={busy}
+              onClick={() => handleAction(() => window.api.restartDownload(movie.id))}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </svg>
             </button>
           )}
 
@@ -204,10 +229,24 @@ export function MovieCard({
 
       {showProgress ? (
         <div className="row-progress">
-          <div className="progress-bar" style={{ width: `${pct}%` }} />
+          <div className="row-progress-bar">
+            <div className="progress-bar" style={{ width: `${pct}%` }} />
+          </div>
           <span className="progress-label">
-            {pct}% — {progress.state}
+            {pct}% · {STATE_LABELS[progress.state] ?? progress.state}
+            {' · '}
+            {progress.peers} peer{progress.peers === 1 ? '' : 's'}
+            {' · ↓ '}
+            {formatSpeed(progress.dlSpeed)}
+            {progress.upSpeed > 0 ? ` · ↑ ${formatSpeed(progress.upSpeed)}` : ''}
           </span>
+        </div>
+      ) : state.status === 'downloading' ? (
+        <div className="row-progress">
+          <div className="row-progress-bar">
+            <div className="progress-bar" style={{ width: '0%' }} />
+          </div>
+          <span className="progress-label">Connecting to swarm…</span>
         </div>
       ) : null}
 

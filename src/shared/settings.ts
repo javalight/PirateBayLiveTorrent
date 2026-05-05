@@ -7,11 +7,6 @@ export interface AppSettings {
   tmdb: {
     apiKey: string | null
   }
-  qbit: {
-    host: string
-    username: string
-    password: string | null
-  }
 }
 
 export const SETTINGS_DEFAULTS: AppSettings = {
@@ -20,8 +15,7 @@ export const SETTINGS_DEFAULTS: AppSettings = {
   downloadDir: '',
   autoMarkSeenOnDownload: true,
   streamWhileDownloading: true,
-  tmdb: { apiKey: null },
-  qbit: { host: 'http://localhost:8080', username: 'admin', password: null }
+  tmdb: { apiKey: null }
 }
 
 /** Show Play button during a download once at least this fraction is on disk. */
