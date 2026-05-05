@@ -25,7 +25,11 @@ mac:
   category: public.app-category.entertainment
   hardenedRuntime: false
   gatekeeperAssess: false
-  identity: null
+  # Ad-hoc sign (`-` means no identity, sign with the local key). On Apple
+  # Silicon, totally-unsigned apps get the misleading "damaged" Gatekeeper
+  # error; ad-hoc signing converts that into the milder right-click-Open
+  # workflow. Real fix is a $99/yr Apple Developer cert + notarization.
+  identity: '-'
 dmg:
   contents:
     - x: 130

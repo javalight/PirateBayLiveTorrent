@@ -26,9 +26,17 @@ Pre-built `.dmg` from [Releases](https://github.com/javalight/PirateBayLiveTorre
 
 1. Download the `.dmg` matching your Mac's CPU (`-arm64` for Apple Silicon, `-x64` for Intel).
 2. Open it, drag the app to `/Applications`.
-3. First launch: macOS Gatekeeper will refuse to open it because the build is unsigned. Right-click the app → **Open** → **Open Anyway**. You only need to do this once.
+3. **First launch — important.** Because the build is unsigned (no $99/yr Apple Developer cert), macOS will block it. You'll see one of two messages:
+   - *"App is damaged and can't be opened"* → run this in Terminal once:
+     ```bash
+     xattr -cr "/Applications/PirateBay Live Torrent.app"
+     ```
+     Then open it normally. (This strips the `com.apple.quarantine` attribute the browser added on download — the app isn't really damaged.)
+   - *"Developer cannot be verified"* → right-click the app in Finder → **Open** → **Open Anyway**.
 
-That's it. No Homebrew install, no separate torrent client — the BitTorrent engine is shipped inside the bundle.
+After that one-time step, future launches just work.
+
+No Homebrew install, no separate torrent client — the BitTorrent engine is shipped inside the bundle.
 
 > Builds are single-architecture by default; if no `-x64` build is published for a given release, build from source (see below) or open an issue.
 
