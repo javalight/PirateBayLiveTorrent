@@ -2,7 +2,7 @@
 
 ![PirateBay Live Torrent — Top 100 Unseen view](docs/screenshot.png)
 
-A local desktop app that tracks listings from [apibay.org](https://apibay.org) (the unofficial Pirate Bay JSON API), enriches them with poster art and metadata from [TMDB](https://www.themoviedb.org/), and lets you download + watch in one click. Built as a single-window Electron app with an embedded BitTorrent engine — no external client to configure, no web UI to keep open.
+A local desktop app that tracks listings from The Pirate Bay, enriches them with poster art and metadata from [TMDB](https://www.themoviedb.org/), and lets you download + watch in one click. Built as a single-window Electron app with an embedded BitTorrent engine — no external client to configure, no web UI to keep open.
 
 > **Status:** personal project, macOS-only build at the moment. Source builds on any platform that can run Electron + Transmission, but the packaging story is Mac-first.
 
@@ -130,7 +130,7 @@ src/
 
 ## Legal notice
 
-This software is a metadata browser and BitTorrent client. **It does not host or distribute any content.** Listings come from [apibay.org](https://apibay.org), a public read-only API.
+This software is a metadata browser and BitTorrent client. **It does not host or distribute any content.** Listings come from The Pirate Bay's public read-only JSON API ([apibay.org](https://apibay.org)).
 
 Downloading copyrighted material without permission is illegal in most jurisdictions. You are responsible for what you do with this tool. Use it for what's legal where you live: public-domain content, Creative Commons releases, software ISOs, your own backups, etc.
 
@@ -147,6 +147,6 @@ The bundled `transmission-daemon` binary is itself licensed under [GPL-3.0](http
 ## Credits
 
 - [Transmission](https://transmissionbt.com/) — the BitTorrent engine
-- [apibay.org](https://apibay.org) — Pirate Bay JSON API
+- The Pirate Bay (via [apibay.org](https://apibay.org)) — listings
 - [TMDB](https://www.themoviedb.org/) — movie metadata + poster art
 - [electron-vite](https://electron-vite.org/), [better-sqlite3](https://github.com/WiseLibs/better-sqlite3), [parse-torrent-title](https://github.com/clement-escolano/parse-torrent-title)
