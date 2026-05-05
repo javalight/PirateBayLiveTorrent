@@ -1,5 +1,7 @@
 # PirateBay Live Torrent
 
+![PirateBay Live Torrent — Top 100 Unseen view](docs/screenshot.png)
+
 A local desktop app that tracks listings from [apibay.org](https://apibay.org) (the unofficial Pirate Bay JSON API), enriches them with poster art and metadata from [TMDB](https://www.themoviedb.org/), and lets you download + watch in one click. Built as a single-window Electron app with an embedded BitTorrent engine — no external client to configure, no web UI to keep open.
 
 > **Status:** personal project, macOS-only build at the moment. Source builds on any platform that can run Electron + Transmission, but the packaging story is Mac-first.
