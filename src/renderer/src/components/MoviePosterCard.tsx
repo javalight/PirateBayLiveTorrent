@@ -167,7 +167,11 @@ export function MoviePosterCard({
           data-tooltip="Watch trailer on YouTube"
           aria-label="Watch trailer"
           disabled={busy}
-          onClick={() => handleAction(() => window.api.openTrailer(trailerUrl, movie.title))}
+          onClick={() => handleAction(() =>
+            appSettings?.trailerUseInApp
+              ? window.api.openTrailer(trailerUrl, movie.title)
+              : window.api.openExternal(trailerUrl)
+          )}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" />

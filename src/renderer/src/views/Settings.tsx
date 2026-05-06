@@ -11,6 +11,7 @@ export function SettingsView(): JSX.Element {
     autoMarkSeenOnDownload: boolean
     streamWhileDownloading: boolean
     showPosters: boolean
+    trailerUseInApp: boolean
   } | null>(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -24,7 +25,8 @@ export function SettingsView(): JSX.Element {
         pollIntervalMin: v.pollIntervalMin,
         autoMarkSeenOnDownload: v.autoMarkSeenOnDownload,
         streamWhileDownloading: v.streamWhileDownloading,
-        showPosters: v.showPosters
+        showPosters: v.showPosters,
+        trailerUseInApp: v.trailerUseInApp
       })
     })
   }, [])
@@ -40,7 +42,8 @@ export function SettingsView(): JSX.Element {
         pollIntervalMin: draft.pollIntervalMin,
         autoMarkSeenOnDownload: draft.autoMarkSeenOnDownload,
         streamWhileDownloading: draft.streamWhileDownloading,
-        showPosters: draft.showPosters
+        showPosters: draft.showPosters,
+        trailerUseInApp: draft.trailerUseInApp
       })
       setS(next)
       refreshAppSettings()
@@ -121,6 +124,14 @@ export function SettingsView(): JSX.Element {
               onChange={(e) => setDraft({ ...draft, showPosters: e.target.checked })}
             />
             <span>Show poster art (looked up from Wikipedia on demand)</span>
+          </label>
+          <label className="row">
+            <input
+              type="checkbox"
+              checked={draft.trailerUseInApp}
+              onChange={(e) => setDraft({ ...draft, trailerUseInApp: e.target.checked })}
+            />
+            <span>Play trailers in a built-in window (default: open in your browser)</span>
           </label>
         </fieldset>
 

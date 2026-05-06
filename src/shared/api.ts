@@ -53,6 +53,7 @@ export interface UpdateSettingsArg {
   autoMarkSeenOnDownload?: boolean
   streamWhileDownloading?: boolean
   showPosters?: boolean
+  trailerUseInApp?: boolean
 }
 
 export interface AppApi {
