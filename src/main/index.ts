@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path'
 import { IpcChannels } from '../shared/ipc.js'
 import { closeDb, getDb } from './db/client.js'
 import { Dal } from './db/dal.js'
+import { seedDefaultTopics } from './db/seeds.js'
 import { Poller } from './sources/poller.js'
 import { buildMagnet, searchTorrents as apibaySearch } from './sources/apibay.js'
 import { parseTorrentTitle } from './enrichment/titleParser.js'
@@ -209,6 +210,7 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
 
 app.whenReady().then(() => {
   dal = new Dal(getDb())
+  seedDefaultTopics(dal)
   const settings = getSettings()
   poller = new Poller(dal, {
     intervalMs: settings.pollIntervalMin * 60 * 1000
