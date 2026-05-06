@@ -74,6 +74,18 @@ export function MovieCard({
       <div className="row-main">
         {rank ? <div className="row-rank">#{rank}</div> : <div className="row-rank row-rank-empty">—</div>}
 
+        {movie.posterUrl ? (
+          <img
+            className="row-poster"
+            src={movie.posterUrl}
+            alt=""
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="row-poster row-poster-empty" aria-hidden>?</div>
+        )}
+
         <div className="row-title-block">
           <h3
             className={`row-title ${mode === 'release' ? 'row-title-release' : 'row-title-clean'}`}

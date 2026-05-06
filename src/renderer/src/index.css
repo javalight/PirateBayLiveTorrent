@@ -399,6 +399,30 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
 }
 .row-rank-empty { color: var(--erased); }
 
+.row-poster {
+  flex: 0 0 46px;
+  width: 46px;
+  height: 69px;
+  object-fit: cover;
+  border: 2px solid var(--pencil);
+  border-radius: 6px;
+  background: var(--erased);
+  box-shadow: var(--shadow-sm);
+  transform: rotate(-1.5deg);
+  transition: transform 0.15s ease;
+}
+.row-poster:hover {
+  transform: rotate(0) scale(1.04);
+}
+.row-poster-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Patrick Hand', sans-serif;
+  font-size: 26px;
+  color: var(--pencil-soft);
+}
+
 .row-title-block { flex: 1; min-width: 0; }
 .row-title {
   margin: 0 0 3px;
