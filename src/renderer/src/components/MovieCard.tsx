@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { TopMovieCard } from '@shared/api'
 import type { DownloadProgressPayload } from '@shared/ipc'
 import { STREAM_PLAY_THRESHOLD } from '@shared/settings'
@@ -43,6 +43,41 @@ export function MovieCard({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Lazy poster: trigger a Wikipedia lookup the first time this row is
+  // visible (or close to it). Cached on disk after; subsequent loads use
+  // the stored URL instantly. Browser handles the actual image bytes
+  // via native `loading="lazy"`.
+  const articleRef = useRef<HTMLElement | null>(null)
+  const [posterUrl, setPosterUrl] = useState<string | null>(movie.posterUrl)
+  useEffect(() => {
+    setPosterUrl(movie.posterUrl)
+  }, [movie.posterUrl])
+  useEffect(() => {
+    if (posterUrl) return
+    const el = articleRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          obs.disconnect()
+          window.api
+            .enrichMovie(movie.id)
+            .then((updated) => {
+              if (updated?.posterUrl) setPosterUrl(updated.posterUrl)
+            })
+            .catch(() => {
+              /* swallow — leave row poster-less */
+            })
+          break
+        }
+      },
+      { rootMargin: '300px 0px' }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [movie.id, posterUrl])
+
   const handleAction = async (op: () => Promise<unknown>): Promise<void> => {
     setBusy(true)
     setError(null)
@@ -70,14 +105,14 @@ export function MovieCard({
   })()
 
   return (
-    <article className="row">
+    <article className="row" ref={articleRef}>
       <div className="row-main">
         {rank ? <div className="row-rank">#{rank}</div> : <div className="row-rank row-rank-empty">—</div>}
 
-        {movie.posterUrl ? (
+        {posterUrl ? (
           <img
             className="row-poster"
-            src={movie.posterUrl}
+            src={posterUrl}
             alt=""
             loading="lazy"
             referrerPolicy="no-referrer"

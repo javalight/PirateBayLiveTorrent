@@ -52,7 +52,6 @@ export interface UpdateSettingsArg {
   downloadDir?: string
   autoMarkSeenOnDownload?: boolean
   streamWhileDownloading?: boolean
-  tmdbApiKey?: string | null
 }
 
 export interface AppApi {
@@ -67,7 +66,7 @@ export interface AppApi {
   topicStats: () => Promise<TopicStats[]>
   topMovies: (topicId: number) => Promise<TopMovieCard[]>
   listMovies: (arg: ListMoviesArg) => Promise<MovieListItem[]>
-  enrichNow: () => Promise<{ attempted: number; linkedToTmdb: number; linkedFallback: number; failed: number }>
+  enrichMovie: (movieId: number) => Promise<Movie | null>
   getSettings: () => Promise<AppSettings>
   updateSettings: (patch: UpdateSettingsArg) => Promise<AppSettings>
   download: (movieId: number) => Promise<void>

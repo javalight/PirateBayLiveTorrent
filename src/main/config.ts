@@ -1,11 +1,7 @@
-import { app, safeStorage } from 'electron'
+import { app } from 'electron'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { SETTINGS_DEFAULTS, type AppSettings } from '../shared/settings.js'
-
-interface PersistedSecrets {
-  tmdbApiKeyEnc: string | null
-}
 
 interface PersistedShape {
   pollIntervalMin: number
@@ -13,7 +9,6 @@ interface PersistedShape {
   downloadDir: string
   autoMarkSeenOnDownload: boolean
   streamWhileDownloading: boolean
-  secrets: PersistedSecrets
 }
 
 let cache: PersistedShape | null = null
@@ -25,8 +20,7 @@ const defaults = (): PersistedShape => ({
   categories: SETTINGS_DEFAULTS.categories,
   downloadDir: join(app.getPath('videos'), 'PBL'),
   autoMarkSeenOnDownload: SETTINGS_DEFAULTS.autoMarkSeenOnDownload,
-  streamWhileDownloading: SETTINGS_DEFAULTS.streamWhileDownloading,
-  secrets: { tmdbApiKeyEnc: null }
+  streamWhileDownloading: SETTINGS_DEFAULTS.streamWhileDownloading
 })
 
 const load = (): PersistedShape => {
@@ -34,13 +28,10 @@ const load = (): PersistedShape => {
   const path = settingsPath()
   try {
     const raw = readFileSync(path, 'utf8')
-    const parsed = JSON.parse(raw) as Partial<PersistedShape> & {
-      // Tolerate legacy keys from pre-WebTorrent settings files; they're ignored.
-      qbitHost?: unknown
-      qbitUsername?: unknown
-    }
+    // Tolerate legacy keys (qbitHost/qbitUsername/secrets/tmdbApiKey…) from
+    // older settings files — extract only what we still use.
+    const parsed = JSON.parse(raw) as Partial<PersistedShape>
     cache = { ...defaults(), ...parsed } as PersistedShape
-    cache.secrets = { tmdbApiKeyEnc: parsed.secrets?.tmdbApiKeyEnc ?? null }
   } catch {
     cache = defaults()
     persist(cache)
@@ -54,19 +45,6 @@ const persist = (s: PersistedShape): void => {
   writeFileSync(settingsPath(), JSON.stringify(s, null, 2))
 }
 
-const encrypt = (plain: string): string =>
-  safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(plain).toString('base64') : plain
-
-const decrypt = (enc: string | null): string | null => {
-  if (!enc) return null
-  if (!safeStorage.isEncryptionAvailable()) return enc
-  try {
-    return safeStorage.decryptString(Buffer.from(enc, 'base64'))
-  } catch {
-    return null
-  }
-}
-
 export function getSettings(): AppSettings {
   const s = load()
   return {
@@ -74,8 +52,7 @@ export function getSettings(): AppSettings {
     categories: s.categories,
     downloadDir: s.downloadDir,
     autoMarkSeenOnDownload: s.autoMarkSeenOnDownload,
-    streamWhileDownloading: s.streamWhileDownloading,
-    tmdb: { apiKey: decrypt(s.secrets.tmdbApiKeyEnc) }
+    streamWhileDownloading: s.streamWhileDownloading
   }
 }
 
@@ -85,7 +62,6 @@ export interface UpdateSettingsInput {
   downloadDir?: string
   autoMarkSeenOnDownload?: boolean
   streamWhileDownloading?: boolean
-  tmdbApiKey?: string | null
 }
 
 export function updateSettings(patch: UpdateSettingsInput): AppSettings {
@@ -95,11 +71,6 @@ export function updateSettings(patch: UpdateSettingsInput): AppSettings {
   if (patch.downloadDir) s.downloadDir = patch.downloadDir
   if (patch.autoMarkSeenOnDownload != null) s.autoMarkSeenOnDownload = patch.autoMarkSeenOnDownload
   if (patch.streamWhileDownloading != null) s.streamWhileDownloading = patch.streamWhileDownloading
-
-  if ('tmdbApiKey' in patch) {
-    s.secrets = { ...s.secrets }
-    s.secrets.tmdbApiKeyEnc = patch.tmdbApiKey ? encrypt(patch.tmdbApiKey) : null
-  }
 
   cache = s
   persist(s)

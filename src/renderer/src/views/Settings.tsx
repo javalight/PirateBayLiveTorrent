@@ -4,7 +4,6 @@ import type { AppSettings } from '@shared/settings'
 export function SettingsView(): JSX.Element {
   const [s, setS] = useState<AppSettings | null>(null)
   const [draft, setDraft] = useState<{
-    tmdbApiKey: string
     downloadDir: string
     pollIntervalMin: number
     autoMarkSeenOnDownload: boolean
@@ -13,14 +12,11 @@ export function SettingsView(): JSX.Element {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [openStatus, setOpenStatus] = useState<string | null>(null)
-  const [backfilling, setBackfilling] = useState(false)
-  const [backfillMsg, setBackfillMsg] = useState<string | null>(null)
 
   useEffect(() => {
     window.api.getSettings().then((v) => {
       setS(v)
       setDraft({
-        tmdbApiKey: v.tmdb.apiKey ?? '',
         downloadDir: v.downloadDir,
         pollIntervalMin: v.pollIntervalMin,
         autoMarkSeenOnDownload: v.autoMarkSeenOnDownload,
@@ -36,7 +32,6 @@ export function SettingsView(): JSX.Element {
     setMsg(null)
     try {
       const next = await window.api.updateSettings({
-        tmdbApiKey: draft.tmdbApiKey || null,
         downloadDir: draft.downloadDir,
         pollIntervalMin: draft.pollIntervalMin,
         autoMarkSeenOnDownload: draft.autoMarkSeenOnDownload,
@@ -58,56 +53,6 @@ export function SettingsView(): JSX.Element {
       </header>
 
       <div className="settings-form">
-        <fieldset>
-          <legend>TMDB</legend>
-          <label>
-            <span>API key</span>
-            <div className="input-with-button">
-              <input
-                type="password"
-                value={draft.tmdbApiKey}
-                onChange={(e) => setDraft({ ...draft, tmdbApiKey: e.target.value })}
-                placeholder="paste your TMDB API key"
-              />
-              <button
-                type="button"
-                className="btn"
-                title="Open TMDB API settings page in your browser"
-                onClick={() => {
-                  void window.api.openExternal('https://www.themoviedb.org/settings/api')
-                }}
-              >
-                Get key ↗
-              </button>
-            </div>
-            <span className="hint inline-hint">Free. Used for poster art and movie metadata.</span>
-          </label>
-
-          <div className="form-actions" style={{ marginTop: 8 }}>
-            <button
-              type="button"
-              className="btn"
-              disabled={backfilling || !s.tmdb.apiKey}
-              title={s.tmdb.apiKey ? 'Re-fetch posters and metadata for everything in your library' : 'Save a TMDB key first'}
-              onClick={async () => {
-                setBackfilling(true)
-                setBackfillMsg('Backfilling — this can take a few minutes for large libraries…')
-                try {
-                  const r = await window.api.enrichNow()
-                  setBackfillMsg(`Done — ${r.linkedToTmdb} matched, ${r.linkedFallback} unmatched, ${r.failed} failed.`)
-                } catch (err) {
-                  setBackfillMsg(`Error: ${String(err)}`)
-                } finally {
-                  setBackfilling(false)
-                }
-              }}
-            >
-              {backfilling ? 'Backfilling…' : 'Backfill posters & metadata'}
-            </button>
-            {backfillMsg ? <span className="hint">{backfillMsg}</span> : null}
-          </div>
-        </fieldset>
-
         <fieldset>
           <legend>Library</legend>
           <label>
@@ -163,6 +108,13 @@ export function SettingsView(): JSX.Element {
             />
             <span>Stream while downloading (prioritize the largest file — Play button appears at 5%)</span>
           </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>About metadata</legend>
+          <p className="hint" style={{ margin: 0 }}>
+            Posters and plot summaries come from Wikipedia, free, no account needed. Each card is looked up the first time it scrolls into view, then cached locally so it loads instantly next time.
+          </p>
         </fieldset>
 
         <div className="form-actions">

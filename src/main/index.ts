@@ -10,7 +10,6 @@ import { Poller } from './sources/poller.js'
 import { buildMagnet, searchTorrents as apibaySearch } from './sources/apibay.js'
 import { parseTorrentTitle } from './enrichment/titleParser.js'
 import { Enricher } from './enrichment/enricher.js'
-import { TmdbClient } from './enrichment/tmdb.js'
 import { getSettings, updateSettings, type UpdateSettingsInput } from './config.js'
 import { DownloadManager } from './torrents/manager.js'
 import { openInDefaultApp } from './player.js'
@@ -21,12 +20,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 let dal: Dal | null = null
 let poller: Poller | null = null
 let downloads: DownloadManager | null = null
-
-const buildEnricher = (d: Dal): Enricher => {
-  const settings = getSettings()
-  const tmdb = settings.tmdb.apiKey ? new TmdbClient(settings.tmdb.apiKey) : null
-  return new Enricher(d, tmdb)
-}
+let enricher: Enricher | null = null
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -93,12 +87,11 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
   ipcMain.handle(IpcChannels.topMovies, (_e, topicId: number) => d.topMovies(topicId))
   ipcMain.handle(IpcChannels.listMovies, (_e, arg: Parameters<Dal['filterMovies']>[0]) => d.filterMovies(arg))
 
-  ipcMain.handle(IpcChannels.enrichNow, async () => {
-    // Manual trigger: clear the 24h retry cooldown so we reconsider every
-    // unmatched torrent + every fallback movie this run. Useful right after
-    // setting a TMDB key for the first time.
-    d.resetEnrichmentCooldown()
-    return buildEnricher(d).enrichPending(2_000)
+  ipcMain.handle(IpcChannels.enrichMovie, async (_e, movieId: number) => {
+    // On-demand single-movie enrichment via Wikipedia, triggered from the
+    // renderer when a card scrolls into view. Cached on disk via the
+    // movies table so subsequent loads use stored URL.
+    return enricher?.enrichOne(movieId) ?? null
   })
 
   ipcMain.handle(IpcChannels.getSettings, () => getSettings())
@@ -221,17 +214,14 @@ app.whenReady().then(() => {
     intervalMs: settings.pollIntervalMin * 60 * 1000
   })
   downloads = new DownloadManager(dal)
+  enricher = new Enricher(dal)
 
-  poller.onResult(async (r) => {
+  poller.onResult((r) => {
+    // Notify renderer of new torrents; enrichment now happens on-demand
+    // when cards scroll into view (no background metadata fetch).
     if (r.newTorrents === 0 && r.unlinkedCount === 0) return
-    try {
-      const result = await buildEnricher(dal!).enrichPending()
-      console.log('[enricher]', result)
-      for (const win of BrowserWindow.getAllWindows()) {
-        win.webContents.send(IpcChannels.topUpdated, { ...r, fetchedAt: Date.now() })
-      }
-    } catch (err) {
-      console.error('[enricher] error:', err)
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.webContents.send(IpcChannels.topUpdated, { ...r, fetchedAt: Date.now() })
     }
   })
 

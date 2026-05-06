@@ -1,96 +1,50 @@
 import { Dal } from '../db/dal.js'
-import { parseTorrentTitle } from './titleParser.js'
-import { TmdbClient, type TmdbBasic } from './tmdb.js'
+import { lookupMovie, type WikipediaMovie } from './wikipedia.js'
+import type { Movie } from '../../shared/types.js'
 
-const RETRY_AFTER_MS = 24 * 60 * 60 * 1000 // 24h between retries for unmatched torrents
-const SLEEP_BETWEEN_LOOKUPS_MS = 200
-
-export interface EnrichmentResult {
-  attempted: number
-  linkedToTmdb: number
-  linkedFallback: number
-  failed: number
-}
-
+/**
+ * On-demand single-movie enrichment via Wikipedia. The renderer triggers
+ * this when a card scrolls into view, so we never speculatively look up
+ * movies the user never sees. Concurrent calls for the same movie are
+ * deduplicated.
+ */
 export class Enricher {
-  constructor(
-    private readonly dal: Dal,
-    private readonly tmdb: TmdbClient | null
-  ) {}
+  private inflight = new Map<number, Promise<Movie | null>>()
 
-  async enrichPending(limit = 100): Promise<EnrichmentResult> {
-    const now = Date.now()
-    const cutoff = now - RETRY_AFTER_MS
-    const torrents = this.dal.torrentsNeedingEnrichment(cutoff, limit)
+  constructor(private readonly dal: Dal) {}
 
-    const result: EnrichmentResult = { attempted: 0, linkedToTmdb: 0, linkedFallback: 0, failed: 0 }
+  enrichOne(movieId: number): Promise<Movie | null> {
+    const existing = this.inflight.get(movieId)
+    if (existing) return existing
+    const p = this.doEnrich(movieId).finally(() => this.inflight.delete(movieId))
+    this.inflight.set(movieId, p)
+    return p
+  }
 
-    for (const t of torrents) {
-      result.attempted++
-      try {
-        const parsed = parseTorrentTitle(t.name)
-        let basic: TmdbBasic | null = null
+  private async doEnrich(movieId: number): Promise<Movie | null> {
+    const movie = this.dal.movieById(movieId)
+    if (!movie) return null
+    if (movie.posterUrl) return movie // already enriched
 
-        if (this.tmdb) {
-          if (t.imdb && /^tt\d+$/.test(t.imdb)) {
-            basic = await this.tmdb.searchByImdbId(t.imdb)
-          }
-          if (!basic) {
-            basic = await this.tmdb.searchByTitle(parsed.cleanTitle, parsed.year)
-          }
-        }
-
-        if (basic && this.tmdb) {
-          // Promote to full details for richer metadata.
-          const full = await this.tmdb.details(basic.tmdbId)
-          const meta = {
-            tmdbId: basic.tmdbId,
-            title: full?.title ?? basic.title,
-            year: full?.year ?? basic.year,
-            posterUrl: full?.posterUrl ?? basic.posterUrl,
-            plot: full?.plot ?? basic.plot,
-            rating: full?.rating ?? basic.rating,
-            runtimeMin: full?.runtimeMin ?? null,
-            genres: full?.genres ?? []
-          }
-          if (t.movieId != null) {
-            // Already linked to a fallback (tmdb_id IS NULL) movie — upgrade
-            // it in place so the existing movie_id keeps its state history.
-            this.dal.updateMovieMeta(t.movieId, meta)
-            this.dal.ensureState(t.movieId)
-          } else {
-            const movieId = this.dal.upsertMovieByTmdbId(meta)
-            this.dal.linkTorrentToMovie(t.infoHash, movieId)
-            this.dal.ensureState(movieId)
-          }
-          result.linkedToTmdb++
-        } else {
-          // Fallback: create lightweight movie record from parsed title alone.
-          const movieId = this.dal.upsertMovieByTmdbId({
-            tmdbId: null,
-            title: parsed.cleanTitle,
-            year: parsed.year,
-            posterUrl: null,
-            plot: null,
-            rating: null,
-            runtimeMin: null,
-            genres: []
-          })
-          this.dal.linkTorrentToMovie(t.infoHash, movieId)
-          this.dal.ensureState(movieId)
-          result.linkedFallback++
-        }
-      } catch (err) {
-        console.error('[enricher] failed for', t.infoHash, t.name, err)
-        result.failed++
-      } finally {
-        this.dal.markEnrichmentTried(t.infoHash, now)
-        if (this.tmdb) await sleep(SLEEP_BETWEEN_LOOKUPS_MS)
-      }
+    let result: WikipediaMovie | null
+    try {
+      result = await lookupMovie(movie.title, movie.year)
+    } catch (err) {
+      console.warn(`[enricher] lookup failed for "${movie.title}":`, err)
+      return movie
     }
+    if (!result) return movie
 
-    return result
+    this.dal.updateMovieMeta(movieId, {
+      tmdbId: movie.tmdbId,
+      title: result.title || movie.title,
+      year: result.year ?? movie.year,
+      posterUrl: result.posterUrl,
+      plot: result.plot ?? movie.plot,
+      rating: movie.rating,
+      runtimeMin: movie.runtimeMin,
+      genres: movie.genres
+    })
+    return this.dal.movieById(movieId)
   }
 }
-
-const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))

@@ -4,9 +4,6 @@ export interface AppSettings {
   downloadDir: string
   autoMarkSeenOnDownload: boolean
   streamWhileDownloading: boolean
-  tmdb: {
-    apiKey: string | null
-  }
 }
 
 export const SETTINGS_DEFAULTS: AppSettings = {
@@ -14,8 +11,7 @@ export const SETTINGS_DEFAULTS: AppSettings = {
   categories: [201],
   downloadDir: '',
   autoMarkSeenOnDownload: true,
-  streamWhileDownloading: true,
-  tmdb: { apiKey: null }
+  streamWhileDownloading: true
 }
 
 /** Show Play button during a download once at least this fraction is on disk. */

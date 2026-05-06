@@ -89,7 +89,8 @@ export async function startDaemon(): Promise<TransmissionRpc> {
     mkdirSync(profileDir, { recursive: true })
 
     const port = await findFreePort()
-    console.log(`[transmission] starting daemon (binary=${binary}, port=${port})`)
+    const peerPort = await findFreePort()
+    console.log(`[transmission] starting daemon (binary=${binary}, rpc=${port}, peer=${peerPort})`)
 
     const child = spawn(
       binary,
@@ -98,6 +99,8 @@ export async function startDaemon(): Promise<TransmissionRpc> {
         '-T', // disable RPC auth (we're on localhost, OS-isolated)
         '-p',
         String(port),
+        '-P',
+        String(peerPort), // random peer port so orphans never block new launches
         '-g',
         profileDir,
         '--rpc-bind-address',

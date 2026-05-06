@@ -11,7 +11,7 @@ export const IpcChannels = {
   archiveTopic: 'topics:archive',
   topicStats: 'topics:stats',
   topMovies: 'movies:top',
-  enrichNow: 'enricher:run',
+  enrichMovie: 'enricher:one',
   getSettings: 'settings:get',
   updateSettings: 'settings:update',
   download: 'movie:download',
