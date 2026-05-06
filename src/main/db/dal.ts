@@ -296,18 +296,59 @@ export class Dal {
     return rows.map(torrentFromRow)
   }
 
-  /** Torrents that need enrichment: no movie linked AND we haven't tried recently. */
+  /**
+   * Torrents that need enrichment. A torrent qualifies if:
+   *  - it has no linked movie, OR
+   *  - it's linked to a fallback movie (tmdb_id IS NULL) — i.e. earlier
+   *    enrichment ran without a TMDB key and only saved the parsed title.
+   * Either way we honor the retry-after cooldown so we don't hammer TMDB
+   * for torrents it genuinely doesn't know about.
+   */
   torrentsNeedingEnrichment(retryAfter: number, limit = 50): Torrent[] {
     const rows = this.db
       .prepare(
-        `SELECT * FROM torrents
-         WHERE movie_id IS NULL
-           AND (enrichment_tried_at IS NULL OR enrichment_tried_at < ?)
-         ORDER BY last_seen_at DESC
-         LIMIT ?`
+        `SELECT torrents.*
+           FROM torrents
+           LEFT JOIN movies ON movies.id = torrents.movie_id
+          WHERE (torrents.movie_id IS NULL OR movies.tmdb_id IS NULL)
+            AND (torrents.enrichment_tried_at IS NULL OR torrents.enrichment_tried_at < ?)
+          ORDER BY torrents.last_seen_at DESC
+          LIMIT ?`
       )
       .all(retryAfter, limit) as TorrentRow[]
     return rows.map(torrentFromRow)
+  }
+
+  /**
+   * Update an existing movie row with new metadata (e.g. when enrichment
+   * upgrades a fallback record to a real TMDB-matched one). Preserves the
+   * movie's id so all `movie_state` history stays linked.
+   */
+  updateMovieMeta(
+    movieId: number,
+    m: Omit<Movie, 'id'>
+  ): void {
+    this.db
+      .prepare(
+        `UPDATE movies SET tmdb_id=?, title=?, year=?, poster_url=?, plot=?, rating=?, runtime_min=?, genres_json=?
+         WHERE id=?`
+      )
+      .run(
+        m.tmdbId,
+        m.title,
+        m.year,
+        m.posterUrl,
+        m.plot,
+        m.rating,
+        m.runtimeMin,
+        JSON.stringify(m.genres),
+        movieId
+      )
+  }
+
+  /** Clear enrichment cooldown so enrichPending() reconsiders everything. */
+  resetEnrichmentCooldown(): void {
+    this.db.prepare('UPDATE torrents SET enrichment_tried_at = NULL').run()
   }
 
   // -- movies ----------------------------------------------------------------

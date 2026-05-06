@@ -93,7 +93,13 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
   ipcMain.handle(IpcChannels.topMovies, (_e, topicId: number) => d.topMovies(topicId))
   ipcMain.handle(IpcChannels.listMovies, (_e, arg: Parameters<Dal['filterMovies']>[0]) => d.filterMovies(arg))
 
-  ipcMain.handle(IpcChannels.enrichNow, async () => buildEnricher(d).enrichPending())
+  ipcMain.handle(IpcChannels.enrichNow, async () => {
+    // Manual trigger: clear the 24h retry cooldown so we reconsider every
+    // unmatched torrent + every fallback movie this run. Useful right after
+    // setting a TMDB key for the first time.
+    d.resetEnrichmentCooldown()
+    return buildEnricher(d).enrichPending(2_000)
+  })
 
   ipcMain.handle(IpcChannels.getSettings, () => getSettings())
   ipcMain.handle(IpcChannels.updateSettings, (_e, patch: UpdateSettingsInput) => {

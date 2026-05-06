@@ -43,7 +43,7 @@ export class Enricher {
         if (basic && this.tmdb) {
           // Promote to full details for richer metadata.
           const full = await this.tmdb.details(basic.tmdbId)
-          const movieId = this.dal.upsertMovieByTmdbId({
+          const meta = {
             tmdbId: basic.tmdbId,
             title: full?.title ?? basic.title,
             year: full?.year ?? basic.year,
@@ -52,9 +52,17 @@ export class Enricher {
             rating: full?.rating ?? basic.rating,
             runtimeMin: full?.runtimeMin ?? null,
             genres: full?.genres ?? []
-          })
-          this.dal.linkTorrentToMovie(t.infoHash, movieId)
-          this.dal.ensureState(movieId)
+          }
+          if (t.movieId != null) {
+            // Already linked to a fallback (tmdb_id IS NULL) movie — upgrade
+            // it in place so the existing movie_id keeps its state history.
+            this.dal.updateMovieMeta(t.movieId, meta)
+            this.dal.ensureState(t.movieId)
+          } else {
+            const movieId = this.dal.upsertMovieByTmdbId(meta)
+            this.dal.linkTorrentToMovie(t.infoHash, movieId)
+            this.dal.ensureState(movieId)
+          }
           result.linkedToTmdb++
         } else {
           // Fallback: create lightweight movie record from parsed title alone.

@@ -13,6 +13,8 @@ export function SettingsView(): JSX.Element {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [openStatus, setOpenStatus] = useState<string | null>(null)
+  const [backfilling, setBackfilling] = useState(false)
+  const [backfillMsg, setBackfillMsg] = useState<string | null>(null)
 
   useEffect(() => {
     window.api.getSettings().then((v) => {
@@ -80,6 +82,30 @@ export function SettingsView(): JSX.Element {
             </div>
             <span className="hint inline-hint">Free. Used for poster art and movie metadata.</span>
           </label>
+
+          <div className="form-actions" style={{ marginTop: 8 }}>
+            <button
+              type="button"
+              className="btn"
+              disabled={backfilling || !s.tmdb.apiKey}
+              title={s.tmdb.apiKey ? 'Re-fetch posters and metadata for everything in your library' : 'Save a TMDB key first'}
+              onClick={async () => {
+                setBackfilling(true)
+                setBackfillMsg('Backfilling — this can take a few minutes for large libraries…')
+                try {
+                  const r = await window.api.enrichNow()
+                  setBackfillMsg(`Done — ${r.linkedToTmdb} matched, ${r.linkedFallback} unmatched, ${r.failed} failed.`)
+                } catch (err) {
+                  setBackfillMsg(`Error: ${String(err)}`)
+                } finally {
+                  setBackfilling(false)
+                }
+              }}
+            >
+              {backfilling ? 'Backfilling…' : 'Backfill posters & metadata'}
+            </button>
+            {backfillMsg ? <span className="hint">{backfillMsg}</span> : null}
+          </div>
         </fieldset>
 
         <fieldset>
