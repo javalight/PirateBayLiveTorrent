@@ -204,15 +204,15 @@ export function MoviePosterCard({
         {state.filePath ? (
           <>
             <button
-              className="btn-ghost icon-only"
+              className="btn-ghost"
               data-tooltip="Show in Finder"
-              aria-label="Show in Finder"
               disabled={busy}
               onClick={() => handleAction(() => window.api.revealItem(movie.id))}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: '-2px', marginRight: 4 }}>
                 <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
               </svg>
+              Folder
             </button>
             <button
               className="btn-ghost icon-only btn-danger"
