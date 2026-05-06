@@ -503,9 +503,14 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
   padding: 0 8px;
 }
 .poster-card-actions .btn-action {
-  flex: 1 1 100%;
+  flex: 1 1 auto;
   font-size: 12px;
   padding: 5px 8px;
+}
+.poster-card-actions .row-break {
+  flex-basis: 100%;
+  height: 0;
+  margin: 0;
 }
 
 /* ── Instant custom tooltips ──────────────────────────────────────────── */
