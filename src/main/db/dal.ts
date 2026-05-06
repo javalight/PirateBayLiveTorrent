@@ -540,8 +540,7 @@ export class Dal {
     }
 
     if (opts.downloadActivityOnly) {
-      // "Ever sent to qBit or ever completed" — robust to status flips
-      // (e.g. user clicks Stream during a download which flips status to 'seen').
+      // "Ever sent to qBit or ever completed" — robust to status flips.
       conds.push(`(ms.qbit_hash IS NOT NULL OR ms.downloaded_at IS NOT NULL)`)
     }
 

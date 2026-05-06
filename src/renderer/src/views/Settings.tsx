@@ -9,7 +9,6 @@ export function SettingsView(): JSX.Element {
     downloadDir: string
     pollIntervalMin: number
     autoMarkSeenOnDownload: boolean
-    streamWhileDownloading: boolean
     showPosters: boolean
     trailerUseInApp: boolean
   } | null>(null)
@@ -24,7 +23,6 @@ export function SettingsView(): JSX.Element {
         downloadDir: v.downloadDir,
         pollIntervalMin: v.pollIntervalMin,
         autoMarkSeenOnDownload: v.autoMarkSeenOnDownload,
-        streamWhileDownloading: v.streamWhileDownloading,
         showPosters: v.showPosters,
         trailerUseInApp: v.trailerUseInApp
       })
@@ -41,7 +39,6 @@ export function SettingsView(): JSX.Element {
         downloadDir: draft.downloadDir,
         pollIntervalMin: draft.pollIntervalMin,
         autoMarkSeenOnDownload: draft.autoMarkSeenOnDownload,
-        streamWhileDownloading: draft.streamWhileDownloading,
         showPosters: draft.showPosters,
         trailerUseInApp: draft.trailerUseInApp
       })
@@ -108,14 +105,6 @@ export function SettingsView(): JSX.Element {
               onChange={(e) => setDraft({ ...draft, autoMarkSeenOnDownload: e.target.checked })}
             />
             <span>Mark as seen automatically when download completes</span>
-          </label>
-          <label className="row">
-            <input
-              type="checkbox"
-              checked={draft.streamWhileDownloading}
-              onChange={(e) => setDraft({ ...draft, streamWhileDownloading: e.target.checked })}
-            />
-            <span>Stream while downloading (prioritize the largest file — Play button appears at 5%)</span>
           </label>
           <label className="row">
             <input

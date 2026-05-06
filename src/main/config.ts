@@ -8,7 +8,6 @@ interface PersistedShape {
   categories: number[]
   downloadDir: string
   autoMarkSeenOnDownload: boolean
-  streamWhileDownloading: boolean
   showPosters: boolean
   trailerUseInApp: boolean
 }
@@ -22,7 +21,6 @@ const defaults = (): PersistedShape => ({
   categories: SETTINGS_DEFAULTS.categories,
   downloadDir: join(app.getPath('videos'), 'PBL'),
   autoMarkSeenOnDownload: SETTINGS_DEFAULTS.autoMarkSeenOnDownload,
-  streamWhileDownloading: SETTINGS_DEFAULTS.streamWhileDownloading,
   showPosters: SETTINGS_DEFAULTS.showPosters,
   trailerUseInApp: SETTINGS_DEFAULTS.trailerUseInApp
 })
@@ -56,7 +54,6 @@ export function getSettings(): AppSettings {
     categories: s.categories,
     downloadDir: s.downloadDir,
     autoMarkSeenOnDownload: s.autoMarkSeenOnDownload,
-    streamWhileDownloading: s.streamWhileDownloading,
     showPosters: s.showPosters,
     trailerUseInApp: s.trailerUseInApp
   }
@@ -67,7 +64,6 @@ export interface UpdateSettingsInput {
   categories?: number[]
   downloadDir?: string
   autoMarkSeenOnDownload?: boolean
-  streamWhileDownloading?: boolean
   showPosters?: boolean
   trailerUseInApp?: boolean
 }
@@ -78,7 +74,6 @@ export function updateSettings(patch: UpdateSettingsInput): AppSettings {
   if (patch.categories) s.categories = patch.categories
   if (patch.downloadDir) s.downloadDir = patch.downloadDir
   if (patch.autoMarkSeenOnDownload != null) s.autoMarkSeenOnDownload = patch.autoMarkSeenOnDownload
-  if (patch.streamWhileDownloading != null) s.streamWhileDownloading = patch.streamWhileDownloading
   if (patch.showPosters != null) s.showPosters = patch.showPosters
   if (patch.trailerUseInApp != null) s.trailerUseInApp = patch.trailerUseInApp
 

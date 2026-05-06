@@ -51,7 +51,6 @@ export interface UpdateSettingsArg {
   categories?: number[]
   downloadDir?: string
   autoMarkSeenOnDownload?: boolean
-  streamWhileDownloading?: boolean
   showPosters?: boolean
   trailerUseInApp?: boolean
 }

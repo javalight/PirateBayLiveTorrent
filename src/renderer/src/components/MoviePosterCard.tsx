@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { TopMovieCard } from '@shared/api'
 import type { DownloadProgressPayload } from '@shared/ipc'
-import { STREAM_PLAY_THRESHOLD } from '@shared/settings'
 import { StatusBadge } from './StatusBadge'
 import { useAppSettings } from '../contexts/AppSettings'
 
@@ -79,11 +78,6 @@ export function MoviePosterCard({
 
   const showProgress = state.status === 'downloading' && progress
   const pct = showProgress ? Math.round(progress.progress * 100) : 0
-  const canStreamNow =
-    state.status === 'downloading' &&
-    !!state.filePath &&
-    !!progress &&
-    progress.progress >= STREAM_PLAY_THRESHOLD
 
   const trailerUrl = (() => {
     const q = `youtube ${movie.title}${movie.year ? ` ${movie.year}` : ''} trailer`
@@ -99,9 +93,6 @@ export function MoviePosterCard({
     }
     if ((state.status === 'downloaded' || state.status === 'seen') && state.filePath) {
       return { label: '▶ Play', run: () => window.api.play(movie.id) }
-    }
-    if (canStreamNow) {
-      return { label: `▶ Stream (${pct}%)`, run: () => window.api.play(movie.id) }
     }
     return null
   })()
@@ -190,17 +181,6 @@ export function MoviePosterCard({
             onClick={() => handleAction(primaryAction.run)}
           >
             {primaryAction.label}
-          </button>
-        ) : null}
-
-        {canStreamNow && primaryAction?.label !== `▶ Stream (${pct}%)` ? (
-          <button
-            className="btn-action"
-            data-tooltip={`Stream now (${pct}% downloaded)`}
-            disabled={busy}
-            onClick={() => handleAction(() => window.api.play(movie.id))}
-          >
-            ▶ Stream
           </button>
         ) : null}
 

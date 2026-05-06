@@ -61,9 +61,7 @@ export class DownloadManager {
 
     const lowerHash = best.infoHash.toLowerCase()
     const magnet = buildMagnet(best.infoHash, best.name)
-    await torrentEngine.addMagnet(magnet, lowerHash, settings.downloadDir, {
-      streamPriority: settings.streamWhileDownloading
-    })
+    await torrentEngine.addMagnet(magnet, lowerHash, settings.downloadDir)
 
     this.dal.setStatus(movieId, 'downloading', { qbitHash: lowerHash })
     this.active.add(lowerHash)
@@ -97,9 +95,7 @@ export class DownloadManager {
     if (!reannounced) {
       mkdirSync(settings.downloadDir, { recursive: true })
       const magnet = buildMagnet(best.infoHash, best.name)
-      await torrentEngine.addMagnet(magnet, lowerHash, settings.downloadDir, {
-        streamPriority: settings.streamWhileDownloading
-      })
+      await torrentEngine.addMagnet(magnet, lowerHash, settings.downloadDir)
     }
 
     this.active.add(lowerHash)
@@ -170,9 +166,7 @@ export class DownloadManager {
       if (!best) continue
       try {
         const magnet = buildMagnet(best.infoHash, best.name)
-        await torrentEngine.addMagnet(magnet, hash, settings.downloadDir, {
-          streamPriority: settings.streamWhileDownloading
-        })
+        await torrentEngine.addMagnet(magnet, hash, settings.downloadDir)
         this.active.add(hash)
       } catch (err) {
         console.warn(`[downloads] could not resume ${hash}:`, err)

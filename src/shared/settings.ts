@@ -3,7 +3,6 @@ export interface AppSettings {
   categories: number[]
   downloadDir: string
   autoMarkSeenOnDownload: boolean
-  streamWhileDownloading: boolean
   showPosters: boolean
   trailerUseInApp: boolean
 }
@@ -13,10 +12,6 @@ export const SETTINGS_DEFAULTS: AppSettings = {
   categories: [201],
   downloadDir: '',
   autoMarkSeenOnDownload: true,
-  streamWhileDownloading: true,
   showPosters: true,
   trailerUseInApp: false
 }
-
-/** Show Play button during a download once at least this fraction is on disk. */
-export const STREAM_PLAY_THRESHOLD = 0.05
