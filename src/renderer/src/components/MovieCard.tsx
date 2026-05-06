@@ -82,9 +82,7 @@ export function MovieCard({
             loading="lazy"
             referrerPolicy="no-referrer"
           />
-        ) : (
-          <div className="row-poster row-poster-empty" aria-hidden>?</div>
-        )}
+        ) : null}
 
         <div className="row-title-block">
           <h3

@@ -414,14 +414,6 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
 .row-poster:hover {
   transform: rotate(0) scale(1.04);
 }
-.row-poster-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Patrick Hand', sans-serif;
-  font-size: 26px;
-  color: var(--pencil-soft);
-}
 
 .row-title-block { flex: 1; min-width: 0; }
 .row-title {
