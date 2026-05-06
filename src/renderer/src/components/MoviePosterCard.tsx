@@ -3,6 +3,7 @@ import type { TopMovieCard } from '@shared/api'
 import type { DownloadProgressPayload } from '@shared/ipc'
 import { StatusBadge } from './StatusBadge'
 import { useAppSettings } from '../contexts/AppSettings'
+import { useNavigation } from '../contexts/Navigation'
 
 const formatSize = (bytes: number): string => {
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -28,6 +29,7 @@ export function MoviePosterCard({
   onChanged?: () => void
 }): JSX.Element {
   const { movie, state, bestTorrent, rank } = card
+  const { searchFor } = useNavigation()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -171,6 +173,19 @@ export function MoviePosterCard({
             <path d="m6.2 5.3 3.1 3.9" />
             <path d="m12.4 3.4 3.1 4" />
             <path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+          </svg>
+        </button>
+
+        <button
+          className="btn-ghost icon-only"
+          data-tooltip="Search torrents for this title"
+          aria-label="Search torrents for this title"
+          disabled={busy}
+          onClick={() => searchFor(movie.title)}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
           </svg>
         </button>
 

@@ -7,6 +7,7 @@ import { FilteredView } from './views/Filtered'
 import { MasterView } from './views/Master'
 import { NewTopic } from './views/NewTopic'
 import { SearchView } from './views/Search'
+import { NavigationProvider } from './contexts/Navigation'
 
 type Tab = 'top100' | 'unseen' | 'favorites' | 'downloads' | 'seen' | 'hidden'
 
@@ -22,7 +23,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
 type Route =
   | { kind: 'master' }
   | { kind: 'topic'; topicId: number; tab: Tab }
-  | { kind: 'search' }
+  | { kind: 'search'; initialQuery?: string }
   | { kind: 'downloads' }
   | { kind: 'settings' }
 
@@ -30,6 +31,9 @@ const sameRoute = (a: Route, b: Route): boolean => {
   if (a.kind !== b.kind) return false
   if (a.kind === 'topic' && b.kind === 'topic') {
     return a.topicId === b.topicId && a.tab === b.tab
+  }
+  if (a.kind === 'search' && b.kind === 'search') {
+    return a.initialQuery === b.initialQuery
   }
   return true
 }
@@ -108,6 +112,12 @@ export function App(): JSX.Element {
     navigate({ kind: 'search' })
     setTopicSwitcherOpen(false)
   }
+  const searchFor = useCallback((query: string): void => {
+    const trimmed = query.trim()
+    if (!trimmed) return
+    navigate({ kind: 'search', initialQuery: trimmed })
+    setTopicSwitcherOpen(false)
+  }, [navigate])
   const goDownloads = (): void => {
     navigate({ kind: 'downloads' })
     setTopicSwitcherOpen(false)
@@ -121,6 +131,7 @@ export function App(): JSX.Element {
     route.kind === 'topic' ? topics.find((t) => t.id === route.topicId) ?? null : null
 
   return (
+    <NavigationProvider value={{ searchFor }}>
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
@@ -230,7 +241,7 @@ export function App(): JSX.Element {
             onPickDownloads={goDownloads}
           />
         )}
-        {route.kind === 'search' && <SearchView />}
+        {route.kind === 'search' && <SearchView initialQuery={route.initialQuery} />}
         {route.kind === 'downloads' && (
           <FilteredView
             title="All downloads"
@@ -268,6 +279,7 @@ export function App(): JSX.Element {
         />
       )}
     </div>
+    </NavigationProvider>
   )
 }
 

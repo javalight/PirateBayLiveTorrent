@@ -4,6 +4,7 @@ import type { DownloadProgressPayload } from '@shared/ipc'
 import { StatusBadge } from './StatusBadge'
 import { useDisplayMode } from '../contexts/DisplayMode'
 import { useAppSettings } from '../contexts/AppSettings'
+import { useNavigation } from '../contexts/Navigation'
 
 const formatSize = (bytes: number): string => {
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -38,6 +39,7 @@ export function MovieCard({
   const { movie, state, bestTorrent, rank } = card
   const rating = movie.rating != null ? movie.rating.toFixed(1) : null
   const { mode } = useDisplayMode()
+  const { searchFor } = useNavigation()
   const primaryTitle = mode === 'release' ? bestTorrent.name : movie.title
   const secondaryTitle = mode === 'release' ? movie.title : bestTorrent.name
   const [busy, setBusy] = useState(false)
@@ -160,6 +162,19 @@ export function MovieCard({
               <path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
             </svg>
             Trailer
+          </button>
+
+          <button
+            className="btn-ghost icon-only"
+            data-tooltip="Search torrents for this title"
+            aria-label="Search torrents for this title"
+            disabled={busy}
+            onClick={() => searchFor(movie.title)}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
           </button>
 
           {!state.filePath && state.status !== 'downloading' && (

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { MovieListItem } from '@shared/api'
 import { useDownloadProgress } from '../hooks/useDownloads'
 import { MovieGrid } from '../components/MovieGrid'
@@ -6,20 +6,19 @@ import { CATEGORY_GROUPS } from '../categories'
 import { DisplayModeToggle } from '../contexts/DisplayMode'
 import { LayoutModeToggle } from '../contexts/LayoutMode'
 
-export function SearchView(): JSX.Element {
-  const [query, setQuery] = useState('')
+export function SearchView({ initialQuery }: { initialQuery?: string }): JSX.Element {
+  const [query, setQuery] = useState(initialQuery ?? '')
   const [category, setCategory] = useState<number | ''>('')
   const [results, setResults] = useState<MovieListItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const submit = async (e: React.FormEvent): Promise<void> => {
-    e.preventDefault()
-    if (!query.trim()) return
+  const runSearch = async (q: string, cat: number | ''): Promise<void> => {
+    if (!q.trim()) return
     setLoading(true)
     setError(null)
     try {
-      const r = await window.api.findTorrents(query.trim(), category === '' ? null : Number(category))
+      const r = await window.api.findTorrents(q.trim(), cat === '' ? null : Number(cat))
       setResults(r)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
@@ -27,6 +26,22 @@ export function SearchView(): JSX.Element {
       setLoading(false)
     }
   }
+
+  const submit = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault()
+    await runSearch(query, category)
+  }
+
+  // Auto-search when arriving from a card's search button (initialQuery
+  // changes whenever the route's initialQuery does — App makes each
+  // entry distinct via sameRoute so re-clicking the same card re-runs).
+  useEffect(() => {
+    if (initialQuery && initialQuery.trim()) {
+      setQuery(initialQuery)
+      void runSearch(initialQuery, '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery])
 
   const refresh = async (): Promise<void> => {
     if (!query.trim()) return
