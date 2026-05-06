@@ -16,6 +16,9 @@ const formatSize = (bytes: number): string => {
   return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${units[i]}`
 }
 
+const formatSpeed = (bytesPerSec: number): string =>
+  bytesPerSec > 0 ? `${formatSize(bytesPerSec)}/s` : '0 B/s'
+
 export function MoviePosterCard({
   card,
   progress,
@@ -139,8 +142,22 @@ export function MoviePosterCard({
         <h3 className="poster-card-title" data-tooltip={movie.title}>{movie.title}</h3>
         <div className="poster-card-sub">
           {movie.year ? <span>{movie.year}</span> : null}
-          {bestTorrent.sizeBytes ? <span>{formatSize(bestTorrent.sizeBytes)}</span> : null}
-          {bestTorrent.seeders ? <span>{bestTorrent.seeders} seed</span> : null}
+          {showProgress ? (
+            <>
+              <span>{pct}%</span>
+              <span>↓ {formatSpeed(progress.dlSpeed)}</span>
+              {progress.peers > 0 ? (
+                <span>{progress.peers} peer{progress.peers === 1 ? '' : 's'}</span>
+              ) : null}
+            </>
+          ) : state.status === 'downloading' ? (
+            <span>Connecting…</span>
+          ) : (
+            <>
+              {bestTorrent.sizeBytes ? <span>{formatSize(bestTorrent.sizeBytes)}</span> : null}
+              {bestTorrent.seeders ? <span>{bestTorrent.seeders} seed</span> : null}
+            </>
+          )}
         </div>
       </div>
 
