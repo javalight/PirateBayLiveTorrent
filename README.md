@@ -6,6 +6,16 @@ A local desktop app that tracks listings from The Pirate Bay, looks up poster ar
 
 > **Status:** personal project, macOS Apple-Silicon (`arm64`) build. The source builds anywhere Electron runs, but the released `.dmg` is single-arch.
 
+> ### ⚠️ macOS users — read this before you double-click the app
+>
+> The build is **unsigned**, so on first launch macOS will show *"Apple could not verify…"* and refuse to open it. **The app is fine — you just give it permission once:**
+>
+> 1. Open the **Apple menu → System Settings → Privacy & Security**.
+> 2. Scroll to the bottom of that page. You'll see a line like *"PirateBay Live Torrent was blocked from use…"*.
+> 3. Click **Open Anyway** next to it, confirm with your password / Touch ID, then click **Open** on the warning that pops up next.
+>
+> From then on it launches normally. (If you instead see *"App is damaged"*, see [Path B below](#path-b--app-is-damaged-and-cant-be-opened).)
+
 ---
 
 ## What it does
@@ -16,8 +26,7 @@ A local desktop app that tracks listings from The Pirate Bay, looks up poster ar
 - **Posters on demand, no key required.** Wikipedia REST API lookup fires the moment a card scrolls into view. The result is cached locally so repeat loads are instant. Toggle off in Settings if you'd rather skip it.
 - **One-click download.** The app drives a bundled `transmission-daemon` over its local RPC. No separate qBittorrent / Transmission install required — the daemon binary plus its dylibs ship inside the `.app`.
 - **One-click play.** When a download finishes, hit ▶ Play and it opens in your OS default player.
-- **Streaming-priority mode.** Optionally prioritize the largest file in a torrent so you can start watching at ~5% downloaded.
-- **Delete-while-keeping-history.** Free up disk by deleting the file but keeping the seen/downloaded record, so you don't accidentally re-download something you've already watched.
+- **Delete-while-keeping-history.** Free up disk by deleting the file but keeping the seen/downloaded record, so you don't accidentally re-download something you've already watched. The Download button reappears on those entries so you can re-grab them later.
 - **Live download stats.** A global "All downloads" page shows everything in flight or completed across all topics, with peer counts and live speeds. Each row also has a ↻ button to force a fresh tracker / DHT re-announce when a swarm goes quiet.
 - **Local-first.** SQLite database, no accounts, no cloud sync. Everything lives in `~/Library/Application Support/piratebay-live-torrent/`.
 
