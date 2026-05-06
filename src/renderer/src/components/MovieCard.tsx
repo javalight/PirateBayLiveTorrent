@@ -151,7 +151,7 @@ export function MovieCard({
         <div className="row-actions">
           <button
             className="btn-ghost"
-            title="Watch trailer on YouTube"
+            data-tooltip="Watch trailer on YouTube"
             disabled={busy}
             onClick={() => handleAction(() => window.api.openExternal(trailerUrl))}
           >
@@ -171,7 +171,7 @@ export function MovieCard({
           {state.status === 'downloading' && (
             <button
               className="btn-ghost icon-only"
-              title="Restart — re-announce to trackers and re-find peers"
+              data-tooltip="Restart — re-announce to trackers and re-find peers"
               aria-label="Restart download"
               disabled={busy}
               onClick={() => handleAction(() => window.api.restartDownload(movie.id))}
@@ -196,7 +196,7 @@ export function MovieCard({
           {state.filePath && (
             <button
               className="btn-ghost icon-only"
-              title="Show in Finder"
+              data-tooltip="Show in Finder"
               aria-label="Show in Finder"
               disabled={busy}
               onClick={() => handleAction(() => window.api.revealItem(movie.id))}
@@ -210,7 +210,7 @@ export function MovieCard({
           {state.filePath && (
             <button
               className="btn-ghost icon-only btn-danger"
-              title="Delete the downloaded file (keeps Seen status)"
+              data-tooltip="Delete file (keeps Seen status)"
               aria-label="Delete file"
               disabled={busy}
               onClick={() => {
@@ -231,7 +231,7 @@ export function MovieCard({
             <button
               className="btn-action"
               disabled={busy}
-              title={`Stream now (${pct}% downloaded)`}
+              data-tooltip={`Stream now (${pct}% downloaded)`}
               onClick={() => handleAction(() => window.api.play(movie.id))}
             >
               ▶ Stream
@@ -242,7 +242,7 @@ export function MovieCard({
             <>
               <button
                 className="btn-ghost"
-                title="Mark as seen without downloading"
+                data-tooltip="Mark as seen without downloading"
                 disabled={busy}
                 onClick={() => handleAction(() => window.api.setStatus(movie.id, 'seen'))}
               >
@@ -250,7 +250,7 @@ export function MovieCard({
               </button>
               <button
                 className="btn-ghost"
-                title="Hide — won't show in Unseen anymore"
+                data-tooltip="Hide — won.t show in Unseen anymore"
                 disabled={busy}
                 onClick={() => handleAction(() => window.api.setStatus(movie.id, 'hidden'))}
               >
@@ -261,7 +261,7 @@ export function MovieCard({
           {(state.status === 'seen' || state.status === 'hidden') && (
             <button
               className="btn-ghost"
-              title="Move back to unseen"
+              data-tooltip="Move back to unseen"
               disabled={busy}
               onClick={() => handleAction(() => window.api.setStatus(movie.id, 'unseen'))}
             >
@@ -271,7 +271,7 @@ export function MovieCard({
 
           <button
             className={`btn-ghost row-fav ${state.favorite ? 'is-fav' : ''}`}
-            title={state.favorite ? 'Remove from favorites' : 'Add to favorites'}
+            data-tooltip={state.favorite ? 'Remove from favorites' : 'Add to favorites'}
             aria-label="Toggle favorite"
             disabled={busy}
             onClick={() => handleAction(() => window.api.setFavorite(movie.id, !state.favorite))}

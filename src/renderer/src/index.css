@@ -377,15 +377,21 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
   padding: 6px 2px;
 }
 .poster-card {
+  position: relative;
   background: #fff;
   border: 2px solid var(--pencil);
   border-radius: var(--wobbly-md);
-  padding: 6px;
+  /* No padding above/sides — poster fills the card edge-to-edge.
+   * Bottom padding holds meta + actions block. */
+  padding: 0 0 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   box-shadow: var(--shadow-soft);
   transition: transform 0.12s ease, box-shadow 0.12s ease;
+  /* No overflow:hidden here — would clip our absolute-positioned
+   * tooltip pseudo-elements when buttons sit near the card edges.
+   * The image clips itself via its own border-radius below. */
 }
 .poster-card:hover {
   transform: translate(-1px, -1px);
@@ -396,9 +402,9 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
   aspect-ratio: 2 / 3;
   width: 100%;
   background: var(--erased);
-  border: 2px solid var(--pencil);
-  border-radius: 6px;
   overflow: hidden;
+  /* Match the card's top corners so the image hugs them visually. */
+  border-radius: var(--wobbly-md) var(--wobbly-md) 0 0;
 }
 .poster-card-image img {
   width: 100%;
@@ -469,7 +475,7 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
   background: var(--postit-deep);
   transition: width 0.3s;
 }
-.poster-card-meta { padding: 0 4px; }
+.poster-card-meta { padding: 8px 8px 0; }
 .poster-card-title {
   margin: 0 0 2px;
   font-family: 'Kalam', sans-serif;
@@ -491,14 +497,57 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
 }
 .poster-card-actions {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
-  padding: 0 4px 4px;
+  flex-wrap: wrap;
+  padding: 0 8px;
 }
 .poster-card-actions .btn-action {
-  flex: 1;
+  flex: 1 1 100%;
   font-size: 12px;
   padding: 5px 8px;
+}
+
+/* ── Instant custom tooltips ──────────────────────────────────────────── */
+/* Replace the slow native `title` tooltip (~700ms delay) with our own
+ * pseudo-element that appears the moment the cursor lands on a button.
+ * Markup: any element with [data-tooltip="..."] participates. */
+
+/* :where() keeps specificity at 0 so explicit `position: absolute` rules
+ * (e.g. .poster-card-fav) still win and stay in their corners. */
+:where([data-tooltip]) {
+  position: relative;
+}
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--pencil);
+  color: #fff;
+  font-family: 'Patrick Hand', sans-serif;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: var(--shadow-sm);
+}
+/* Tiny arrow pointing down from the tooltip toward the button. */
+[data-tooltip]:hover::before,
+[data-tooltip]:focus-visible::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 1px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--pencil);
+  pointer-events: none;
+  z-index: 1000;
 }
 .row {
   background: #fff;
