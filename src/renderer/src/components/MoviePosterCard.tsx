@@ -91,11 +91,13 @@ export function MoviePosterCard({
   })()
 
   const primaryAction = ((): { label: string; run: () => Promise<unknown> } | null => {
-    if (state.status === 'unseen' || state.status === 'hidden') {
+    // No file on disk and not currently downloading → user can (re-)download.
+    // This covers: unseen, hidden, and seen/downloaded entries whose file
+    // was deleted locally.
+    if (!state.filePath && state.status !== 'downloading') {
       return { label: 'Download', run: () => window.api.download(movie.id) }
     }
-    if (state.status === 'downloaded' || state.status === 'seen') {
-      if (!state.filePath) return null
+    if ((state.status === 'downloaded' || state.status === 'seen') && state.filePath) {
       return { label: '▶ Play', run: () => window.api.play(movie.id) }
     }
     if (canStreamNow) {

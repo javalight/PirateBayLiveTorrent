@@ -168,7 +168,7 @@ export function MovieCard({
             Trailer
           </button>
 
-          {(state.status === 'unseen' || state.status === 'hidden') && (
+          {!state.filePath && state.status !== 'downloading' && (
             <button
               className="btn-action"
               disabled={busy}
@@ -193,10 +193,10 @@ export function MovieCard({
             </button>
           )}
 
-          {(state.status === 'downloaded' || state.status === 'seen') && (
+          {(state.status === 'downloaded' || state.status === 'seen') && state.filePath && (
             <button
               className="btn-action"
-              disabled={busy || !state.filePath}
+              disabled={busy}
               onClick={() => handleAction(() => window.api.play(movie.id))}
             >
               Play
