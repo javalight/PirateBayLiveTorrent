@@ -487,6 +487,9 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  /* Reserve two lines of height even when the title is one line, so
+   * every card's meta + actions block lines up at the same Y. */
+  min-height: 2.4em;
 }
 .poster-card-sub {
   display: flex;
