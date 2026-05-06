@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { App } from './App'
 import { DisplayModeProvider } from './contexts/DisplayMode'
 import { AppSettingsProvider } from './contexts/AppSettings'
+import { LayoutModeProvider } from './contexts/LayoutMode'
 import './index.css'
 
 const container = document.getElementById('root')
@@ -12,7 +13,9 @@ createRoot(container).render(
   <StrictMode>
     <AppSettingsProvider>
       <DisplayModeProvider>
-        <App />
+        <LayoutModeProvider>
+          <App />
+        </LayoutModeProvider>
       </DisplayModeProvider>
     </AppSettingsProvider>
   </StrictMode>

@@ -3,12 +3,15 @@ import type { Topic } from '@shared/types'
 import { useTopMovies } from '../hooks/useMovies'
 import { useDownloadProgress } from '../hooks/useDownloads'
 import { MovieCard } from '../components/MovieCard'
+import { MoviePosterCard } from '../components/MoviePosterCard'
 import { DisplayModeToggle } from '../contexts/DisplayMode'
+import { LayoutModeToggle, useLayoutMode } from '../contexts/LayoutMode'
 
 export function Top100View({ topic }: { topic: Topic }): JSX.Element {
   const { movies, loading, error, refresh, pollNow } = useTopMovies(topic.id)
   const progress = useDownloadProgress(refresh)
   const [polling, setPolling] = useState(false)
+  const { mode } = useLayoutMode()
 
   const handleRefresh = async (): Promise<void> => {
     setPolling(true)
@@ -30,6 +33,7 @@ export function Top100View({ topic }: { topic: Topic }): JSX.Element {
           {topic.name} — {headerLabel}
         </h2>
         <div className="view-header-right">
+          <LayoutModeToggle />
           <DisplayModeToggle />
           <button className="btn refresh-btn" onClick={() => void handleRefresh()} disabled={busy}>
             {busy ? <span className="spinner" /> : null}
@@ -43,19 +47,28 @@ export function Top100View({ topic }: { topic: Topic }): JSX.Element {
       {!loading && movies.length === 0 ? (
         <div className="empty">
           <p>Nothing here yet — first poll may still be running.</p>
-          <p>If this persists, open Settings, add your TMDB API key, then click Refresh now.</p>
+          <p>Hit “Refresh now” to fetch the latest Top 100.</p>
         </div>
       ) : null}
 
-      <div className="list">
-        {movies.map((card) => (
-          <MovieCard
-            key={card.movie.id}
-            card={card}
-            progress={progress[card.movie.id]}
-            onChanged={refresh}
-          />
-        ))}
+      <div className={mode === 'grid' ? 'poster-grid' : 'list'}>
+        {movies.map((card) =>
+          mode === 'grid' ? (
+            <MoviePosterCard
+              key={card.movie.id}
+              card={card}
+              progress={progress[card.movie.id]}
+              onChanged={refresh}
+            />
+          ) : (
+            <MovieCard
+              key={card.movie.id}
+              card={card}
+              progress={progress[card.movie.id]}
+              onChanged={refresh}
+            />
+          )
+        )}
       </div>
     </section>
   )

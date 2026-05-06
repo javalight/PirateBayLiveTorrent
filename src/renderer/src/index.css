@@ -367,6 +367,139 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
   flex-direction: column;
   gap: 8px;
 }
+
+/* ── Poster grid (LayoutMode = 'grid') ────────────────────────────────── */
+
+.poster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 24px;
+  padding: 6px 2px;
+}
+.poster-card {
+  background: #fff;
+  border: 2px solid var(--pencil);
+  border-radius: var(--wobbly-md);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.poster-card:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow);
+}
+.poster-card-image {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  width: 100%;
+  background: var(--erased);
+  border: 2px solid var(--pencil);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.poster-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.poster-card-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Patrick Hand', sans-serif;
+  font-size: 56px;
+  color: var(--pencil-soft);
+  padding: 8px;
+  text-align: center;
+  word-break: break-word;
+}
+.poster-card-rank {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: var(--marker-red);
+  color: #fff;
+  font-family: 'Kalam', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 2px 7px;
+  border-radius: var(--wobbly-pill);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+}
+.poster-card-fav {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.92);
+  border: 2px solid var(--pencil);
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.poster-card-fav.is-fav { color: var(--marker-yellow, #d4a017); }
+.poster-card-status {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+}
+.poster-card-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: var(--erased);
+}
+.poster-card-progress-bar {
+  height: 100%;
+  background: var(--postit-deep);
+  transition: width 0.3s;
+}
+.poster-card-meta { padding: 0 4px; }
+.poster-card-title {
+  margin: 0 0 2px;
+  font-family: 'Kalam', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--pencil);
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.poster-card-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--pencil-soft);
+}
+.poster-card-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 0 4px 4px;
+}
+.poster-card-actions .btn-action {
+  flex: 1;
+  font-size: 12px;
+  padding: 5px 8px;
+}
 .row {
   background: #fff;
   border: 2px solid var(--pencil);
@@ -385,18 +518,8 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
 
 .row-main {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 14px;
-  /* Reserves vertical space so the poster slot (which uses aspect-ratio
-   * + align-self: stretch) has a stable height. Prevents layout shift
-   * when an image swaps in. */
-  min-height: 72px;
-}
-.row-main > .row-rank,
-.row-main > .row-title-block,
-.row-main > .row-actions,
-.row-main > .badge {
-  align-self: center;
 }
 .row-rank {
   flex: 0 0 44px;
@@ -410,13 +533,12 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
 .row-rank-empty { color: var(--erased); }
 
 .row-poster {
-  flex: 0 0 auto;
-  align-self: stretch;
-  /* 2:3 portrait poster ratio. Width auto-derived from row height so the
-   * thumbnail fills the card vertically without distorting the image. */
-  aspect-ratio: 2 / 3;
-  width: auto;
-  height: auto;
+  flex: 0 0 46px;
+  width: 46px;
+  height: 69px;
+  /* Cancel the row's 10px vertical padding so the poster meets the top
+   * and bottom of the card without extra whitespace. */
+  margin: -10px 0;
   object-fit: cover;
   border: 2px solid var(--pencil);
   border-radius: 6px;

@@ -4,6 +4,7 @@ import { useDownloadProgress } from '../hooks/useDownloads'
 import { MovieGrid } from '../components/MovieGrid'
 import { CATEGORY_GROUPS } from '../categories'
 import { DisplayModeToggle } from '../contexts/DisplayMode'
+import { LayoutModeToggle } from '../contexts/LayoutMode'
 
 export function SearchView(): JSX.Element {
   const [query, setQuery] = useState('')
@@ -44,6 +45,7 @@ export function SearchView(): JSX.Element {
       <header className="view-header">
         <h2>Search torrents</h2>
         <div className="view-header-right">
+          <LayoutModeToggle />
           <DisplayModeToggle />
         </div>
       </header>

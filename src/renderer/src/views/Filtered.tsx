@@ -3,6 +3,7 @@ import type { ListMoviesArg, MovieListItem } from '@shared/api'
 import { useDownloadProgress } from '../hooks/useDownloads'
 import { MovieGrid } from '../components/MovieGrid'
 import { DisplayModeToggle } from '../contexts/DisplayMode'
+import { LayoutModeToggle } from '../contexts/LayoutMode'
 
 export function FilteredView({
   title,
@@ -51,6 +52,7 @@ export function FilteredView({
       <header className="view-header">
         <h2>{title}</h2>
         <div className="view-header-right">
+          <LayoutModeToggle />
           <DisplayModeToggle />
           {searchable && (
             <input
