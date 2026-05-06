@@ -4,6 +4,7 @@ import type { DownloadProgressPayload } from '@shared/ipc'
 import { STREAM_PLAY_THRESHOLD } from '@shared/settings'
 import { StatusBadge } from './StatusBadge'
 import { useDisplayMode } from '../contexts/DisplayMode'
+import { useAppSettings } from '../contexts/AppSettings'
 
 const formatSize = (bytes: number): string => {
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -46,14 +47,18 @@ export function MovieCard({
   // Lazy poster: trigger a Wikipedia lookup the first time this row is
   // visible (or close to it). Cached on disk after; subsequent loads use
   // the stored URL instantly. Browser handles the actual image bytes
-  // via native `loading="lazy"`.
+  // via native `loading="lazy"`. The slot itself (with `?` placeholder)
+  // is always rendered when posters are enabled, so loading the image
+  // never shifts surrounding content.
+  const appSettings = useAppSettings()
+  const showPosters = appSettings?.showPosters ?? true
   const articleRef = useRef<HTMLElement | null>(null)
   const [posterUrl, setPosterUrl] = useState<string | null>(movie.posterUrl)
   useEffect(() => {
     setPosterUrl(movie.posterUrl)
   }, [movie.posterUrl])
   useEffect(() => {
-    if (posterUrl) return
+    if (!showPosters || posterUrl) return
     const el = articleRef.current
     if (!el) return
     const obs = new IntersectionObserver(
@@ -67,7 +72,7 @@ export function MovieCard({
               if (updated?.posterUrl) setPosterUrl(updated.posterUrl)
             })
             .catch(() => {
-              /* swallow — leave row poster-less */
+              /* swallow — leave row placeholder-only */
             })
           break
         }
@@ -76,7 +81,7 @@ export function MovieCard({
     )
     obs.observe(el)
     return () => obs.disconnect()
-  }, [movie.id, posterUrl])
+  }, [movie.id, posterUrl, showPosters])
 
   const handleAction = async (op: () => Promise<unknown>): Promise<void> => {
     setBusy(true)
@@ -109,14 +114,18 @@ export function MovieCard({
       <div className="row-main">
         {rank ? <div className="row-rank">#{rank}</div> : <div className="row-rank row-rank-empty">—</div>}
 
-        {posterUrl ? (
-          <img
-            className="row-poster"
-            src={posterUrl}
-            alt=""
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
+        {showPosters ? (
+          posterUrl ? (
+            <img
+              className="row-poster"
+              src={posterUrl}
+              alt=""
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="row-poster row-poster-empty" aria-hidden>?</div>
+          )
         ) : null}
 
         <div className="row-title-block">

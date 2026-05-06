@@ -52,6 +52,7 @@ export interface UpdateSettingsArg {
   downloadDir?: string
   autoMarkSeenOnDownload?: boolean
   streamWhileDownloading?: boolean
+  showPosters?: boolean
 }
 
 export interface AppApi {

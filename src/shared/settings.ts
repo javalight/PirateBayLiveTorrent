@@ -4,6 +4,7 @@ export interface AppSettings {
   downloadDir: string
   autoMarkSeenOnDownload: boolean
   streamWhileDownloading: boolean
+  showPosters: boolean
 }
 
 export const SETTINGS_DEFAULTS: AppSettings = {
@@ -11,7 +12,8 @@ export const SETTINGS_DEFAULTS: AppSettings = {
   categories: [201],
   downloadDir: '',
   autoMarkSeenOnDownload: true,
-  streamWhileDownloading: true
+  streamWhileDownloading: true,
+  showPosters: true
 }
 
 /** Show Play button during a download once at least this fraction is on disk. */

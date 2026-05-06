@@ -385,8 +385,18 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
 
 .row-main {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 14px;
+  /* Reserves vertical space so the poster slot (which uses aspect-ratio
+   * + align-self: stretch) has a stable height. Prevents layout shift
+   * when an image swaps in. */
+  min-height: 72px;
+}
+.row-main > .row-rank,
+.row-main > .row-title-block,
+.row-main > .row-actions,
+.row-main > .badge {
+  align-self: center;
 }
 .row-rank {
   flex: 0 0 44px;
@@ -400,19 +410,26 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
 .row-rank-empty { color: var(--erased); }
 
 .row-poster {
-  flex: 0 0 46px;
-  width: 46px;
-  height: 69px;
+  flex: 0 0 auto;
+  align-self: stretch;
+  /* 2:3 portrait poster ratio. Width auto-derived from row height so the
+   * thumbnail fills the card vertically without distorting the image. */
+  aspect-ratio: 2 / 3;
+  width: auto;
+  height: auto;
   object-fit: cover;
   border: 2px solid var(--pencil);
   border-radius: 6px;
   background: var(--erased);
   box-shadow: var(--shadow-sm);
-  transform: rotate(-1.5deg);
-  transition: transform 0.15s ease;
 }
-.row-poster:hover {
-  transform: rotate(0) scale(1.04);
+.row-poster-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Patrick Hand', sans-serif;
+  font-size: 26px;
+  color: var(--pencil-soft);
 }
 
 .row-title-block { flex: 1; min-width: 0; }

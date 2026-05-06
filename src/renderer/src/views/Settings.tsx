@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import type { AppSettings } from '@shared/settings'
+import { useRefreshAppSettings } from '../contexts/AppSettings'
 
 export function SettingsView(): JSX.Element {
+  const refreshAppSettings = useRefreshAppSettings()
   const [s, setS] = useState<AppSettings | null>(null)
   const [draft, setDraft] = useState<{
     downloadDir: string
     pollIntervalMin: number
     autoMarkSeenOnDownload: boolean
     streamWhileDownloading: boolean
+    showPosters: boolean
   } | null>(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -20,7 +23,8 @@ export function SettingsView(): JSX.Element {
         downloadDir: v.downloadDir,
         pollIntervalMin: v.pollIntervalMin,
         autoMarkSeenOnDownload: v.autoMarkSeenOnDownload,
-        streamWhileDownloading: v.streamWhileDownloading
+        streamWhileDownloading: v.streamWhileDownloading,
+        showPosters: v.showPosters
       })
     })
   }, [])
@@ -35,9 +39,11 @@ export function SettingsView(): JSX.Element {
         downloadDir: draft.downloadDir,
         pollIntervalMin: draft.pollIntervalMin,
         autoMarkSeenOnDownload: draft.autoMarkSeenOnDownload,
-        streamWhileDownloading: draft.streamWhileDownloading
+        streamWhileDownloading: draft.streamWhileDownloading,
+        showPosters: draft.showPosters
       })
       setS(next)
+      refreshAppSettings()
       setMsg('Saved.')
     } catch (err: unknown) {
       setMsg(`Error: ${String(err)}`)
@@ -107,6 +113,14 @@ export function SettingsView(): JSX.Element {
               onChange={(e) => setDraft({ ...draft, streamWhileDownloading: e.target.checked })}
             />
             <span>Stream while downloading (prioritize the largest file — Play button appears at 5%)</span>
+          </label>
+          <label className="row">
+            <input
+              type="checkbox"
+              checked={draft.showPosters}
+              onChange={(e) => setDraft({ ...draft, showPosters: e.target.checked })}
+            />
+            <span>Show poster art (looked up from Wikipedia on demand)</span>
           </label>
         </fieldset>
 
