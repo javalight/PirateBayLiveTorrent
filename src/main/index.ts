@@ -185,6 +185,39 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
     }
     await shell.openExternal(url)
   })
+  ipcMain.handle(IpcChannels.openTrailer, async (_event, url: string, title?: string) => {
+    if (typeof url !== 'string' || !/^https?:/i.test(url)) {
+      throw new Error('openTrailer only accepts http/https URLs')
+    }
+    // No `parent`: macOS child windows can't enter native fullscreen,
+    // and YouTube's fullscreen button is the whole point of this UX.
+    const win = new BrowserWindow({
+      width: 1024,
+      height: 720,
+      title: title ? `Trailer — ${title}` : 'Trailer',
+      autoHideMenuBar: true,
+      backgroundColor: '#000',
+      webPreferences: {
+        // No preload / no app API surface — this loads untrusted external content.
+        sandbox: true,
+        contextIsolation: true,
+        nodeIntegration: false
+      }
+    })
+    // Bridge HTML5 Fullscreen API → native window fullscreen so YouTube's
+    // fullscreen button actually expands the window (otherwise the <video>
+    // just fills the existing 1024×720 frame).
+    win.webContents.on('enter-html-full-screen', () => win.setFullScreen(true))
+    win.webContents.on('leave-html-full-screen', () => win.setFullScreen(false))
+    // Keep navigation contained: any new-window/popup attempts (YouTube
+    // sometimes opens share links in a new tab) load in the same window
+    // instead of spawning extras.
+    win.webContents.setWindowOpenHandler(({ url: target }) => {
+      if (/^https?:/i.test(target)) win.loadURL(target)
+      return { action: 'deny' }
+    })
+    await win.loadURL(url)
+  })
   ipcMain.handle(IpcChannels.openPath, async (_e, path: string) => {
     if (!path || typeof path !== 'string') throw new Error('Empty path')
     const expanded = path.startsWith('~/') ? path.replace(/^~/, app.getPath('home')) : path

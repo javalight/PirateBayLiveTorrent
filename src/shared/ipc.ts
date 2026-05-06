@@ -24,6 +24,7 @@ export const IpcChannels = {
   listMovies: 'movies:list',
   openPath: 'shell:open-path',
   openExternal: 'shell:open-external',
+  openTrailer: 'shell:open-trailer',
   revealItem: 'shell:reveal-item',
   topUpdated: 'top:updated',
   downloadProgress: 'download:progress'

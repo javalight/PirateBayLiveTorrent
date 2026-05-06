@@ -153,7 +153,7 @@ export function MovieCard({
             className="btn-ghost"
             data-tooltip="Watch trailer on YouTube"
             disabled={busy}
-            onClick={() => handleAction(() => window.api.openExternal(trailerUrl))}
+            onClick={() => handleAction(() => window.api.openTrailer(trailerUrl, movie.title))}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: '-2px', marginRight: 4 }}>
               <path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" />

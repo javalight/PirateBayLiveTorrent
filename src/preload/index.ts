@@ -26,6 +26,7 @@ const api: AppApi = {
   setFavorite: (movieId, favorite) => ipcRenderer.invoke(IpcChannels.setFavorite, movieId, favorite),
   openPath: (path) => ipcRenderer.invoke(IpcChannels.openPath, path),
   openExternal: (url) => ipcRenderer.invoke(IpcChannels.openExternal, url),
+  openTrailer: (url, title) => ipcRenderer.invoke(IpcChannels.openTrailer, url, title),
   revealItem: (movieId) => ipcRenderer.invoke(IpcChannels.revealItem, movieId),
   onTopUpdated: (cb) => {
     const handler = (_e: Electron.IpcRendererEvent, payload: TopUpdatedPayload): void => cb(payload)

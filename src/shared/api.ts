@@ -79,6 +79,7 @@ export interface AppApi {
   setFavorite: (movieId: number, favorite: boolean) => Promise<void>
   openPath: (path: string) => Promise<void>
   openExternal: (url: string) => Promise<void>
+  openTrailer: (url: string, title?: string) => Promise<void>
   revealItem: (movieId: number) => Promise<void>
   onTopUpdated: (cb: (payload: TopUpdatedPayload) => void) => () => void
   onDownloadProgress: (cb: (payload: DownloadProgressPayload) => void) => () => void
