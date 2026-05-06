@@ -1,23 +1,24 @@
 # PirateBay Live Torrent
 
-![PirateBay Live Torrent — Top 100 Unseen view](docs/screenshot.png)
+![PirateBay Live Torrent — Movies grid view](docs/screenshot.png)
 
-A local desktop app that tracks listings from The Pirate Bay, enriches them with poster art and metadata from [TMDB](https://www.themoviedb.org/), and lets you download + watch in one click. Built as a single-window Electron app with an embedded BitTorrent engine — no external client to configure, no web UI to keep open.
+A local desktop app that tracks listings from The Pirate Bay, looks up poster art and plot summaries on demand from Wikipedia (no API key, no signup), and lets you download + watch in one click. Built as a single-window Electron app with a bundled BitTorrent engine — no external client to configure, no web UI to keep open.
 
-> **Status:** personal project, macOS-only build at the moment. Source builds on any platform that can run Electron + Transmission, but the packaging story is Mac-first.
+> **Status:** personal project, macOS Apple-Silicon (`arm64`) build. The source builds anywhere Electron runs, but the released `.dmg` is single-arch.
 
 ---
 
 ## What it does
 
-- **Topics.** Save any Top 100 category or search query as a "topic." The app polls each topic on a schedule and tracks what's new.
-- **Per-movie state.** Every movie has a status: *unseen / downloading / downloaded / seen / hidden*, plus a favorite flag. Quick-action buttons on every row to mark seen, hide, or favorite.
-- **Metadata enrichment.** With a free TMDB API key, the app fills in poster art, year, plot, rating, runtime, and genres for everything it discovers.
-- **One-click download.** The app drives a bundled `transmission-daemon` over its local RPC. No separate qBittorrent / Transmission install required — the daemon binary and its dylibs are shipped inside the `.app` bundle.
+- **Three Top-100 topics out of the box.** First launch auto-creates 🎬 Top 100 Movies, 📺 Top 100 TV Shows, 🎮 Top 100 Games — no setup. Add your own topics (any apibay category or saved search) anytime.
+- **Per-movie state.** Every entry has a status: *unseen / downloading / downloaded / seen / hidden*, plus a favorite flag. Quick-action buttons on every row.
+- **List or grid view.** A toggle in the top-right of every page flips between a compact list with side thumbnails and a Netflix-style poster grid.
+- **Posters on demand, no key required.** Wikipedia REST API lookup fires the moment a card scrolls into view. The result is cached locally so repeat loads are instant. Toggle off in Settings if you'd rather skip it.
+- **One-click download.** The app drives a bundled `transmission-daemon` over its local RPC. No separate qBittorrent / Transmission install required — the daemon binary plus its dylibs ship inside the `.app`.
 - **One-click play.** When a download finishes, hit ▶ Play and it opens in your OS default player.
 - **Streaming-priority mode.** Optionally prioritize the largest file in a torrent so you can start watching at ~5% downloaded.
-- **Delete-while-keeping-history.** Free up disk by deleting the file but keeping the seen/downloaded history intact, so you don't accidentally re-download something you've already watched.
-- **Live downloads view.** A global "All downloads" page shows everything in flight or completed across all topics, with peer counts and live speeds.
+- **Delete-while-keeping-history.** Free up disk by deleting the file but keeping the seen/downloaded record, so you don't accidentally re-download something you've already watched.
+- **Live download stats.** A global "All downloads" page shows everything in flight or completed across all topics, with peer counts and live speeds. Each row also has a ↻ button to force a fresh tracker / DHT re-announce when a swarm goes quiet.
 - **Local-first.** SQLite database, no accounts, no cloud sync. Everything lives in `~/Library/Application Support/piratebay-live-torrent/`.
 
 ---
@@ -26,7 +27,7 @@ A local desktop app that tracks listings from The Pirate Bay, enriches them with
 
 Pre-built `.dmg` from [Releases](https://github.com/javalight/PirateBayLiveTorrent/releases):
 
-1. Download the `.dmg` matching your Mac's CPU (`-arm64` for Apple Silicon, `-x64` for Intel).
+1. Download the latest `-arm64.dmg` (Apple Silicon Mac).
 2. Open the `.dmg` and drag the app to `/Applications`.
 
 ### First launch — macOS will block it. Here's how to allow it.
@@ -47,28 +48,17 @@ That's it. From now on the app launches normally with a double-click.
 
 #### Path B — "App is damaged and can't be opened"
 
-If you see the "damaged" message instead (less common, depends on browser), open Terminal (⌘+Space → "Terminal") and run:
+If you see the "damaged" message instead (depends on browser), open Terminal (⌘+Space → "Terminal") and run:
 
 ```bash
 xattr -cr "/Applications/PirateBay Live Torrent.app"
 ```
 
-Then double-click the app. You may still need to do Path A on top of it, but usually one or the other is enough.
+Then double-click the app.
 
 > The app isn't really damaged — that's just how older macOS phrases the same warning when the browser tagged the download with a `com.apple.quarantine` attribute. The Terminal command strips it.
 
----
-
-No Homebrew install, no separate torrent client — the BitTorrent engine is shipped inside the bundle.
-
-> Builds are single-architecture by default; if no `-x64` build is published for a given release, build from source (see below) or open an issue.
-
-### Configure TMDB (optional but recommended)
-
-Without a TMDB API key the app still works, but movies show only the raw release name and no poster. To enable enrichment:
-
-1. Get a free key at [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api).
-2. Open the app → ⚙ Settings → paste it under **TMDB API key** → Save.
+That's it — no Homebrew install, no separate torrent client, no API key.
 
 ---
 
@@ -97,11 +87,14 @@ npm run package:mac
 ```
 
 This:
+
 1. Runs `scripts/bundle-transmission.sh` — copies your local `transmission-daemon` plus its non-system dylibs (`libevent`, `libminiupnpc`) into `resources/bin/`, rewriting their rpaths to `@executable_path/libs/...` so the bundle runs on a clean Mac with no Homebrew installed.
 2. Builds the Electron app with `electron-vite`.
-3. Runs `electron-builder` to produce a `.dmg` in `dist/`.
+3. Runs `electron-builder` to produce a `.dmg` and `.zip` in `dist/`.
 
 The result is fully self-contained — no install dependencies for the end user.
+
+See [CLAUDE.md](CLAUDE.md) for the full build / release runbook (including how to cut a new GitHub release).
 
 ---
 
@@ -114,14 +107,16 @@ The result is fully self-contained — no install dependencies for the end user.
 │  (React)        │      │                   │◄────►│ (child proc) │
 └─────────────────┘      └───────────────────┘      └──────────────┘
          │                        │                         │
-         └─ React UI: topics,     ├─ DAL (better-sqlite3)   └─ Real BitTorrent
-            cards, downloads,     ├─ apibay poller             via libtorrent —
-            settings              ├─ TMDB enricher              DHT, trackers,
-                                  ├─ DownloadManager            uTP, UPnP/NAT-PMP
+         └─ List / grid views,    ├─ DAL (better-sqlite3)   └─ Real BitTorrent
+            on-demand Wikipedia   ├─ apibay poller             via libtorrent —
+            poster lookup,        ├─ Wikipedia enricher        DHT, trackers,
+            settings, downloads   ├─ DownloadManager           uTP, UPnP/NAT-PMP
                                   └─ Engine wrapper
 ```
 
-Why not WebTorrent? It was tried (see git history). The pure-JS implementation can't reliably reach traditional BitTorrent swarms on networks where peers are seeded by qBittorrent / libtorrent clients — it found ~0 peers where Transmission finds dozens. So the app embeds Transmission for the heavy lifting and just talks to it over its localhost RPC.
+**Why not WebTorrent?** It was tried (see git history). The pure-JS implementation couldn't reliably reach traditional BitTorrent swarms on networks where seeders run libtorrent — it found ~0 peers where Transmission finds dozens. So the app embeds Transmission for the heavy lifting and just talks to it over its localhost RPC.
+
+**Why not TMDB?** TMDB requires an API key plus an awkward signup form (application name, address, etc.). Wikipedia is free, requires no auth, and matches well enough for ~85% of mainstream releases. Lookups happen lazily — only when a card scrolls into view — and are cached locally, so the network cost is amortized to one request per movie ever.
 
 ---
 
@@ -129,21 +124,21 @@ Why not WebTorrent? It was tried (see git history). The pure-JS implementation c
 
 ```
 src/
-├── main/              Electron main process
-│   ├── db/            SQLite schema, migrations, DAL
-│   ├── enrichment/    TMDB client + title parser
-│   ├── sources/       apibay client + poller
+├── main/              Electron main process (Node)
+│   ├── db/            SQLite schema, migrations, DAL, first-run seeds
+│   ├── enrichment/    Wikipedia client + on-demand enricher + title parser
+│   ├── sources/       apibay client + scheduled poller
 │   ├── torrents/      Transmission daemon supervisor + RPC + engine wrapper
-│   ├── config.ts      Settings persistence (electron safeStorage)
+│   ├── config.ts      Settings persistence
 │   └── index.ts       App lifecycle + IPC handlers
 ├── preload/           contextBridge surface
 ├── renderer/          React UI
 │   └── src/
-│       ├── App.tsx          Routing, history, sidebar
-│       ├── components/      MovieCard, MovieGrid, etc.
-│       ├── views/           Top100, Filtered, Search, Master, Settings, ...
+│       ├── App.tsx          Routing, history (back button), sidebar
+│       ├── components/      MovieCard (list row), MoviePosterCard (grid tile), MovieGrid, StatusBadge
+│       ├── views/           Top100, Filtered, Search, Master, Settings, NewTopic
 │       ├── hooks/           useMovies, useDownloads
-│       └── contexts/        DisplayMode (release-name vs movie-title toggle)
+│       └── contexts/        DisplayMode (release/title), LayoutMode (list/grid), AppSettings
 └── shared/            Types, IPC channel names, settings schema
 ```
 
@@ -151,7 +146,7 @@ src/
 
 ## Legal notice
 
-This software is a metadata browser and BitTorrent client. **It does not host or distribute any content.** Listings come from The Pirate Bay's public read-only JSON API ([apibay.org](https://apibay.org)).
+This software is a metadata browser and BitTorrent client. **It does not host or distribute any content.** Listings come from The Pirate Bay's public read-only JSON API ([apibay.org](https://apibay.org)). Poster thumbnails come from [Wikipedia](https://en.wikipedia.org/api/rest_v1/).
 
 Downloading copyrighted material without permission is illegal in most jurisdictions. You are responsible for what you do with this tool. Use it for what's legal where you live: public-domain content, Creative Commons releases, software ISOs, your own backups, etc.
 
@@ -169,5 +164,5 @@ The bundled `transmission-daemon` binary is itself licensed under [GPL-3.0](http
 
 - [Transmission](https://transmissionbt.com/) — the BitTorrent engine
 - The Pirate Bay (via [apibay.org](https://apibay.org)) — listings
-- [TMDB](https://www.themoviedb.org/) — movie metadata + poster art
+- [Wikipedia](https://en.wikipedia.org/) — poster art and plot summaries
 - [electron-vite](https://electron-vite.org/), [better-sqlite3](https://github.com/WiseLibs/better-sqlite3), [parse-torrent-title](https://github.com/clement-escolano/parse-torrent-title)
