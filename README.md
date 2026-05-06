@@ -27,16 +27,37 @@ A local desktop app that tracks listings from The Pirate Bay, enriches them with
 Pre-built `.dmg` from [Releases](https://github.com/javalight/PirateBayLiveTorrent/releases):
 
 1. Download the `.dmg` matching your Mac's CPU (`-arm64` for Apple Silicon, `-x64` for Intel).
-2. Open it, drag the app to `/Applications`.
-3. **First launch — important.** Because the build is unsigned (no $99/yr Apple Developer cert), macOS will block it. You'll see one of two messages:
-   - *"App is damaged and can't be opened"* → run this in Terminal once:
-     ```bash
-     xattr -cr "/Applications/PirateBay Live Torrent.app"
-     ```
-     Then open it normally. (This strips the `com.apple.quarantine` attribute the browser added on download — the app isn't really damaged.)
-   - *"Developer cannot be verified"* → right-click the app in Finder → **Open** → **Open Anyway**.
+2. Open the `.dmg` and drag the app to `/Applications`.
 
-After that one-time step, future launches just work.
+### First launch — macOS will block it. Here's how to allow it.
+
+This build is **unsigned** (no paid $99/yr Apple Developer cert), so the first time you double-click the app, macOS Gatekeeper will refuse to open it and show a warning. **The app is fine — you just have to give it permission once.** Pick the path that matches what you see:
+
+#### Path A — "Apple could not verify…" (the common one)
+
+1. Click **Done** on the warning dialog (do **not** click "Move to Trash").
+2. Open the Apple menu → **System Settings** → **Privacy & Security**.
+3. Scroll down to the **Security** section. You'll see a line saying:
+   > "PirateBay Live Torrent" was blocked from use because it is not from an identified developer.
+4. Click the **Open Anyway** button next to it.
+5. Confirm with your Mac password / Touch ID.
+6. macOS will pop the warning one more time — now click **Open**.
+
+That's it. From now on the app launches normally with a double-click.
+
+#### Path B — "App is damaged and can't be opened"
+
+If you see the "damaged" message instead (less common, depends on browser), open Terminal (⌘+Space → "Terminal") and run:
+
+```bash
+xattr -cr "/Applications/PirateBay Live Torrent.app"
+```
+
+Then double-click the app. You may still need to do Path A on top of it, but usually one or the other is enough.
+
+> The app isn't really damaged — that's just how older macOS phrases the same warning when the browser tagged the download with a `com.apple.quarantine` attribute. The Terminal command strips it.
+
+---
 
 No Homebrew install, no separate torrent client — the BitTorrent engine is shipped inside the bundle.
 
