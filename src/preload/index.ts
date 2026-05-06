@@ -19,6 +19,7 @@ const api: AppApi = {
   updateSettings: (patch) => ipcRenderer.invoke(IpcChannels.updateSettings, patch),
   download: (movieId) => ipcRenderer.invoke(IpcChannels.download, movieId),
   restartDownload: (movieId) => ipcRenderer.invoke(IpcChannels.restartDownload, movieId),
+  cancelDownload: (movieId) => ipcRenderer.invoke(IpcChannels.cancelDownload, movieId),
   deleteFile: (movieId) => ipcRenderer.invoke(IpcChannels.deleteFile, movieId),
   findTorrents: (query, category) => ipcRenderer.invoke(IpcChannels.findTorrents, query, category),
   play: (movieId) => ipcRenderer.invoke(IpcChannels.play, movieId),

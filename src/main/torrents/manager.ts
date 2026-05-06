@@ -112,6 +112,33 @@ export class DownloadManager {
   }
 
   /**
+   * Cancel an in-progress download: yank the torrent from the engine
+   * (with data), reset status to 'unseen' so the Download button comes
+   * back, and drop it from the active set. Used when a torrent is stuck
+   * in metaDL or otherwise not making progress and the user wants out.
+   */
+  async cancel(movieId: number): Promise<void> {
+    const row = this.dbRow(movieId)
+    if (row?.qbit_hash) {
+      try {
+        await torrentEngine.remove(row.qbit_hash, true)
+      } catch (err) {
+        console.warn('[downloads] engine cancel failed:', err)
+      }
+      this.active.delete(row.qbit_hash.toLowerCase())
+    }
+    if (row?.file_path) {
+      try {
+        const stat = statSync(row.file_path)
+        rmSync(row.file_path, { recursive: stat.isDirectory(), force: true })
+      } catch {
+        /* file may already be gone or never landed — fine */
+      }
+    }
+    this.dal.setStatus(movieId, 'unseen', { filePath: null, qbitHash: null })
+  }
+
+  /**
    * Delete the downloaded file(s) for a movie to reclaim disk space.
    * Keeps the seen/status state and history intact — only the file_path and
    * qbit_hash are cleared so the UI knows the file is gone.

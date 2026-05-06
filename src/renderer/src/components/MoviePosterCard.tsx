@@ -139,6 +139,18 @@ export function MoviePosterCard({
           {movie.year ? <span>{movie.year}</span> : null}
           {showProgress ? (
             <>
+              <button
+                className="btn-cancel"
+                data-tooltip="Cancel download"
+                aria-label="Cancel download"
+                disabled={busy}
+                onClick={() => {
+                  if (!confirm(`Cancel the download for "${movie.title}"?\n\nAny partial data will be removed.`)) return
+                  handleAction(() => window.api.cancelDownload(movie.id))
+                }}
+              >
+                ×
+              </button>
               <span>{pct}%</span>
               <span>↓ {formatSpeed(progress.dlSpeed)}</span>
               {progress.peers > 0 ? (
@@ -146,7 +158,21 @@ export function MoviePosterCard({
               ) : null}
             </>
           ) : state.status === 'downloading' ? (
-            <span>Connecting…</span>
+            <>
+              <button
+                className="btn-cancel"
+                data-tooltip="Cancel download"
+                aria-label="Cancel download"
+                disabled={busy}
+                onClick={() => {
+                  if (!confirm(`Cancel the download for "${movie.title}"?`)) return
+                  handleAction(() => window.api.cancelDownload(movie.id))
+                }}
+              >
+                ×
+              </button>
+              <span>Connecting…</span>
+            </>
           ) : (
             <>
               {bestTorrent.sizeBytes ? <span>{formatSize(bestTorrent.sizeBytes)}</span> : null}

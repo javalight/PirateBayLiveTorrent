@@ -106,6 +106,7 @@ function registerIpc(d: Dal, p: Poller, dl: DownloadManager): void {
 
   ipcMain.handle(IpcChannels.download, async (_e, movieId: number) => dl.download(movieId))
   ipcMain.handle(IpcChannels.restartDownload, async (_e, movieId: number) => dl.restart(movieId))
+  ipcMain.handle(IpcChannels.cancelDownload, async (_e, movieId: number) => dl.cancel(movieId))
   ipcMain.handle(IpcChannels.deleteFile, async (_e, movieId: number) => dl.deleteFile(movieId))
 
   ipcMain.handle(IpcChannels.findTorrents, async (_e, query: string, category: number | null) => {

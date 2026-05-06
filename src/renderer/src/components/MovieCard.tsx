@@ -294,21 +294,49 @@ export function MovieCard({
           <div className="row-progress-bar">
             <div className="progress-bar" style={{ width: `${pct}%` }} />
           </div>
-          <span className="progress-label">
-            {pct}% · {STATE_LABELS[progress.state] ?? progress.state}
-            {' · '}
-            {progress.peers} peer{progress.peers === 1 ? '' : 's'}
-            {' · ↓ '}
-            {formatSpeed(progress.dlSpeed)}
-            {progress.upSpeed > 0 ? ` · ↑ ${formatSpeed(progress.upSpeed)}` : ''}
-          </span>
+          <div className="progress-label-row">
+            <button
+              className="btn-cancel"
+              data-tooltip="Cancel download"
+              aria-label="Cancel download"
+              disabled={busy}
+              onClick={() => {
+                if (!confirm(`Cancel the download for "${movie.title}"?\n\nAny partial data will be removed.`)) return
+                handleAction(() => window.api.cancelDownload(movie.id))
+              }}
+            >
+              ×
+            </button>
+            <span className="progress-label">
+              {pct}% · {STATE_LABELS[progress.state] ?? progress.state}
+              {' · '}
+              {progress.peers} peer{progress.peers === 1 ? '' : 's'}
+              {' · ↓ '}
+              {formatSpeed(progress.dlSpeed)}
+              {progress.upSpeed > 0 ? ` · ↑ ${formatSpeed(progress.upSpeed)}` : ''}
+            </span>
+          </div>
         </div>
       ) : state.status === 'downloading' ? (
         <div className="row-progress">
           <div className="row-progress-bar">
             <div className="progress-bar" style={{ width: '0%' }} />
           </div>
-          <span className="progress-label">Connecting to swarm…</span>
+          <div className="progress-label-row">
+            <button
+              className="btn-cancel"
+              data-tooltip="Cancel download"
+              aria-label="Cancel download"
+              disabled={busy}
+              onClick={() => {
+                if (!confirm(`Cancel the download for "${movie.title}"?`)) return
+                handleAction(() => window.api.cancelDownload(movie.id))
+              }}
+            >
+              ×
+            </button>
+            <span className="progress-label">Connecting to swarm…</span>
+          </div>
         </div>
       ) : null}
 

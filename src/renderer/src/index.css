@@ -680,6 +680,38 @@ button:disabled:hover { background: var(--erased); color: var(--pencil-soft); tr
   font-family: 'Patrick Hand', sans-serif;
   letter-spacing: 0.2px;
 }
+.progress-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Small ×-shaped cancel button used inline with download-progress text.
+ * Square, red on hover, hand-drawn style consistent with the rest. */
+.btn-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 700;
+  font-family: 'Patrick Hand', sans-serif;
+  background: transparent;
+  color: var(--pencil);
+  border: 2px solid var(--pencil);
+  border-radius: var(--wobbly-sm);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.btn-cancel:hover {
+  background: var(--marker-red);
+  color: #fff;
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 0 var(--pencil);
+}
+.btn-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
 .row-error {
   margin-top: 8px;
   font-size: 12px;

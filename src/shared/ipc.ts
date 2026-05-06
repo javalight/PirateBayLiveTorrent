@@ -16,6 +16,7 @@ export const IpcChannels = {
   updateSettings: 'settings:update',
   download: 'movie:download',
   restartDownload: 'movie:restart-download',
+  cancelDownload: 'movie:cancel-download',
   deleteFile: 'movie:delete-file',
   findTorrents: 'torrents:find',
   play: 'movie:play',

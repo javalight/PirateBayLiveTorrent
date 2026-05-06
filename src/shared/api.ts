@@ -72,6 +72,7 @@ export interface AppApi {
   updateSettings: (patch: UpdateSettingsArg) => Promise<AppSettings>
   download: (movieId: number) => Promise<void>
   restartDownload: (movieId: number) => Promise<void>
+  cancelDownload: (movieId: number) => Promise<void>
   deleteFile: (movieId: number) => Promise<void>
   findTorrents: (query: string, category: number | null) => Promise<MovieListItem[]>
   play: (movieId: number) => Promise<void>
