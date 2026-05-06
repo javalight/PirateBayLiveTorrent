@@ -60,12 +60,25 @@ export function SettingsView(): JSX.Element {
           <legend>TMDB</legend>
           <label>
             <span>API key</span>
-            <input
-              type="password"
-              value={draft.tmdbApiKey}
-              onChange={(e) => setDraft({ ...draft, tmdbApiKey: e.target.value })}
-              placeholder="Get one at themoviedb.org/settings/api"
-            />
+            <div className="input-with-button">
+              <input
+                type="password"
+                value={draft.tmdbApiKey}
+                onChange={(e) => setDraft({ ...draft, tmdbApiKey: e.target.value })}
+                placeholder="paste your TMDB API key"
+              />
+              <button
+                type="button"
+                className="btn"
+                title="Open TMDB API settings page in your browser"
+                onClick={() => {
+                  void window.api.openExternal('https://www.themoviedb.org/settings/api')
+                }}
+              >
+                Get key ↗
+              </button>
+            </div>
+            <span className="hint inline-hint">Free. Used for poster art and movie metadata.</span>
           </label>
         </fieldset>
 
